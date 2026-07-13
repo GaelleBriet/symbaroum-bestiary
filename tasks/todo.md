@@ -35,14 +35,24 @@ Remettre le select à vide après ajout
 Feedback bref "Monstre ajouté!" (toast ou message inline)
 
   
-### SPRINT 4: Supabase — Persistence Cloud
+### SPRINT 4: Supabase — Persistence Cloud — ✅ CODE TERMINÉ (test manuel restant)
 
 Raison: Dexie stocke dans le navigateur. Vider le cache = tous les monstres perdus.
 Supabase = comptes MJ, données sauvegardées en cloud, accessibles depuis n'importe quel appareil.
 
--  (compte par MJ)
-- Sync monsters table → Supabase
-- Migration Dexie → Supabase
+- [x] `npm install @supabase/supabase-js`
+- [x] `src/lib/supabase.ts` — client initialisé (`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`)
+- [x] `src/stores/authStore.ts` — session, login/logout, `onAuthStateChange`
+- [x] `src/components/LoginForm.vue` — email/password, pas d'inscription publique
+- [x] `src/App.vue` — gate (chargement → login → app), session persistante au refresh
+- [x] `src/components/AuthStatusBar.vue` — badge "Mode hors ligne" + bouton déconnexion (dans les 2 headers)
+- [x] `src/logic/supabaseSync.ts` — fetch/upsert/delete, uniquement monstres `isCustom: true`
+- [x] `monsterStore.ts` — `hydrateFromCloud` au login + sync fire-and-forget sur add/update/delete
+- [x] Fallback offline : si hydratation échoue, Dexie sert de cache, badge affiché
+- [x] Monstres officiels (`isCustom: false`) jamais envoyés à Supabase
+
+**Vérifié** : build TypeScript sans nouvelle erreur, tous les modules servis sans erreur par Vite, projet Supabase joignable (`/auth/v1/health` → 200, RLS actif → 401 sans session).
+**Non vérifié** (pas de navigateur disponible dans cet environnement de dev) : login réel avec le compte de Paul, rendu visuel, cycle CRUD live dans l'UI. À tester manuellement avant de clore définitivement le sprint.
 
 
 

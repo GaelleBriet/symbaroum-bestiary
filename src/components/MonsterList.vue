@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useMonsterStore } from '@/stores/monsterStore'
 import { MONSTERS } from '@/data/monsters'
 import type { Monster } from '@/types/monster'
+import AuthStatusBar from '@/components/AuthStatusBar.vue'
 
 const store = useMonsterStore()
 
@@ -93,9 +94,12 @@ function resistanceStyle(r: string) {
       <h1 class="font-cinzel text-lg font-semibold text-sym-text tracking-wide">
         Bestiaire Symbaroum
       </h1>
-      <span class="text-xs text-sym-text3">
-        {{ store.monsters.length }} créature{{ store.monsters.length !== 1 ? 's' : '' }}
-      </span>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-sym-text3">
+          {{ store.monsters.length }} créature{{ store.monsters.length !== 1 ? 's' : '' }}
+        </span>
+        <AuthStatusBar />
+      </div>
     </nav>
 
     <!-- Barre de contrôle 2 lignes -->

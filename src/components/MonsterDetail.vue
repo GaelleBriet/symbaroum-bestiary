@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import { useMonsterStore } from '@/stores/monsterStore'
+import AuthStatusBar from '@/components/AuthStatusBar.vue'
 import { calculateEffectiveStats, levelLabel } from '@/logic/mechanics'
 import { WEAPONS, ARMORS } from '@/data/equipment'
 import { TALENTS } from '@/data/talents'
 import { TRAITS } from '@/data/traits'
 import { MONSTROUS_TRAITS } from '@/data/monstrousTraits'
-import { calculateWeaponFormula, calculateArmorFormula, diceAverage, calculateTotalDamage } from '@/logic/damageCalculator'
+import {  calculateArmorFormula, diceAverage, calculateTotalDamage } from '@/logic/damageCalculator'
 import type { Monster } from '@/types/monster'
 import type { TalentOrTrait, ActivationType } from '@/types/rules'
 
@@ -56,10 +57,10 @@ function weaponDiceLabel(w: typeof catalogWeapons.value[0]): string {
   return w.stored.damage > 0 ? `1d${w.stored.damage}` : '—'
 }
 
-function weaponQualityNote(w: typeof catalogWeapons.value[0]): string {
-  if (w.catalog) return calculateWeaponFormula(w.catalog)
-  return w.stored.name ?? w.stored.id
-}
+// function weaponQualityNote(w: typeof catalogWeapons.value[0]): string {
+//  if (w.catalog) return calculateWeaponFormula(w.catalog)
+//  return w.stored.name ?? w.stored.id
+// }
 
 // ─── Combat — dégâts totaux ───────────────────────────────────────────────────
 const totalDamage = computed(() => calculateTotalDamage(monster.value, effective.value))
@@ -236,6 +237,7 @@ function toggleItem(key: string) {
       <span class="shrink-0 text-sym-text3" style="font-size:11px;">
         {{ store.monsters.length }} créature{{ store.monsters.length !== 1 ? 's' : '' }}
       </span>
+      <AuthStatusBar />
     </header>
 
     <!-- ── BARRE 2 : header MonsterDetail ────────────────────────────────── -->

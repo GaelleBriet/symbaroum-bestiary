@@ -52,6 +52,8 @@ export interface TalentEffect {
 
   // Effets textuels complexes (affichage MJ, implémentation future)
   customText?: string;
+
+  healingDice?: string; // ex: "1d6" pour soins
 }
 
 /**

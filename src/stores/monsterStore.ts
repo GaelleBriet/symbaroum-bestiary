@@ -10,6 +10,12 @@ import {
   updateMonster as dbUpdate,
   deleteMonster as dbDelete,
 } from '@/logic/database'
+import {
+  fetchCustomMonsters,
+  upsertMonsterRemote,
+  deleteMonsterRemote,
+} from '@/logic/supabaseSync'
+import { useAuthStore } from '@/stores/authStore'
 
 export const useMonsterStore = defineStore('monsters', () => {
   // ─── État ────────────────────────────────────────────────────────────────
@@ -89,11 +95,27 @@ export const useMonsterStore = defineStore('monsters', () => {
     }
   }
 
+  // ─── Hydratation depuis Supabase (cache Dexie ← cloud) ───────────────────
+  async function hydrateFromCloud(userId: string) {
+    const remoteMonsters = await fetchCustomMonsters(userId)
+    if (remoteMonsters.length > 0) {
+      await db.monsters.bulkPut(remoteMonsters)
+    }
+  }
+
   // ─── CRUD (via database.ts) ───────────────────────────────────────────────
   async function addMonster(data: Omit<Monster, 'id' | 'createdAt'>): Promise<Monster> {
     const id = await dbCreate(data)
     const monster = await db.monsters.get(id) as Monster
     monsters.value.push(monster)
+
+    if (monster.isCustom) {
+      const authStore = useAuthStore()
+      if (authStore.userId) {
+        upsertMonsterRemote(monster, authStore.userId).catch(console.error)
+      }
+    }
+
     return monster
   }
 
@@ -102,15 +124,27 @@ export const useMonsterStore = defineStore('monsters', () => {
     const idx = monsters.value.findIndex((m) => m.id === id)
     if (idx !== -1) {
       monsters.value[idx] = { ...monsters.value[idx], ...changes, updatedAt: Date.now() }
+
+      if (monsters.value[idx].isCustom) {
+        const authStore = useAuthStore()
+        if (authStore.userId) {
+          upsertMonsterRemote(monsters.value[idx], authStore.userId).catch(console.error)
+        }
+      }
     }
   }
 
   async function deleteMonster(id: string): Promise<void> {
+    const monster = monsters.value.find((m) => m.id === id)
     await dbDelete(id)
     monsters.value = monsters.value.filter((m) => m.id !== id)
     if (selectedMonsterId.value === id) {
       selectedMonsterId.value = null
       currentView.value = 'list'
+    }
+
+    if (monster?.isCustom) {
+      deleteMonsterRemote(id).catch(console.error)
     }
   }
 
@@ -157,6 +191,7 @@ export const useMonsterStore = defineStore('monsters', () => {
     resetEndurance,
     // Actions
     loadAll,
+    hydrateFromCloud,
     addMonster,
     updateMonster,
     deleteMonster,
