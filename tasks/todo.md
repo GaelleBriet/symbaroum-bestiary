@@ -54,5 +54,28 @@ Supabase = comptes MJ, données sauvegardées en cloud, accessibles depuis n'imp
 **Vérifié** : build TypeScript sans nouvelle erreur, tous les modules servis sans erreur par Vite, projet Supabase joignable (`/auth/v1/health` → 200, RLS actif → 401 sans session).
 **Non vérifié** (pas de navigateur disponible dans cet environnement de dev) : login réel avec le compte de Paul, rendu visuel, cycle CRUD live dans l'UI. À tester manuellement avant de clore définitivement le sprint.
 
+### CORRECTIFS — Bugs remontés par Paul sur la fiche Scrofar — ✅ CODE TERMINÉ (vérif visuelle restante)
+
+Cause racine trouvée : `statModifiers` corrompu sur les 35 monstres (= `10 - baseStats`, cf. `tasks/lessons.md`), moteur de calcul mélangeant Défense/Agilité, rangs I/II/III cumulés au lieu de ne garder que le rang max, armes naturelles mal dérivées. Détail des causes et des formules dans `tasks/lessons.md`.
+
+- [x] Bug 1 — Bonus efficient des attributs non calculé (affichait la stat brute, pas `10 - stat`)
+- [x] Bug 2 — Bonus efficient Agilité modifié par Robuste/Vigoureux (isolé dans le calcul de Défense uniquement)
+- [x] Bug 3 — ATT JOUEUR = `10 - Défense` (pas `10 - Agilité`)
+- [x] Bug 4 — Défense fausse (Scrofar : 13 Agi - 4 Robuste III = 9) ; `defenseBonus` n'est plus additionné, recalculé comme `10 - Défense` et affiché en second nombre dans la case Défense ("+1 ATT joueurs")
+- [x] Bug 5 — Dégâts : moyenne statistique (pas le max), dés de base des Défenses corrigés (1d8 défenses + 1d8 Robuste III + 1d4 Poigne de fer II = 11,5)
+- [x] Bug 6 — "Équipement" renommé "Armes"
+- [x] Bug 7 — Dé de l'arme naturelle dérivé du rang du trait Arme Naturelle (1d4→1d6→1d8→1d10), plus lu depuis le champ brut `damage`
+- [x] Amélioration 1 — Catégorie de la créature (race) agrandie sous le nom
+- [x] Amélioration 2 — Seuil de blessure agrandi sous Endurance
+- [x] Bonus trouvé en creusant (non demandé mais même famille de bug) : Absorption incluait pas le bonus d'Armure Naturelle, jamais affiché ; rangs I/II/III d'Armure Naturelle cumulés au lieu du rang max
+
+**Vérifié** : `vue-tsc --noEmit` sans erreur ; logique validée en exécutant `calculateEffectiveStats`/`calculateTotalDamage` directement sur les données réelles de Scrofar et Kanaran — tous les résultats correspondent exactement aux calculs manuels de Paul (Défense 9/+1, Défense Kanaran 14/-4, Dégâts 11,5).
+**Non vérifié** : rendu visuel dans le navigateur — bloqué par l'auth Supabase réelle (compte unique de Paul), pas de credentials disponibles dans cet environnement. À vérifier visuellement par Paul/toi avant de considérer le sprint clos.
+
+**Suivi / dette identifiée (pas fait, à trier)** :
+- Champ `defenseBonus` devenu inutilisé dans le calcul (remplacé par une valeur dérivée) — encore présent dans `Monster`/`MonsterForm.vue`/les données. À nettoyer (retirer du formulaire ?) si vous validez qu'il ne sert plus à rien.
+- Autres talents à rangs potentiellement cumulatifs à auditer avec la même grille que Robuste/Armure Naturelle/Arme Naturelle (ex. Poigne de Fer III qui devrait sans doute remplacer le II, pas s'additionner).
+- Armes non cataloguées sur le reste du bestiaire (ex. `epee-rouille` du Dragoul) : retombent maintenant sur le dé "mains nues" par défaut (1d4 sauf Arme Naturelle) faute de correspondance dans `equipment.ts` — correct pour les créatures aux griffes/crocs, mais pas idéal pour une "vraie" arme manufacturée mal identifiée. À vérifier monstre par monstre si besoin.
+
 
 

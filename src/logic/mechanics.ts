@@ -12,11 +12,10 @@ import { MONSTROUS_TRAITS } from '@/data/monstrousTraits'
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface PlayerModifiers {
-  // Ce que le joueur ajoute à son jet d'attaque contre ce monstre (10 - Agilité_effective)
+  // Ce que le joueur ajoute à son jet d'attaque contre ce monstre (10 - Défense du monstre)
   attackModifier: number;
   // Ce que le joueur ajoute à son jet de défense contre ce monstre (10 - stat_effective)
   defenseModifier: number;
-  attackBaseStat: StatKey;
   // Stat utilisée pour la défense joueur (normalement 'accurate', 'strong' si Poigne de fer)
   defenseBaseStat: StatKey;
 }
@@ -36,14 +35,19 @@ export interface ActiveAbility {
 
 export interface SkinProtection {
   source: string;    // "Vigoureux II" ou "Robuste I"
-  dice?: string;     // "1d6" si dés (Vigoureux)
-  fixed?: number;    // valeur fixe si Robuste
+  dice?: string;      // "1d6" — protection toujours exprimée en dé (Vigoureux ET Robuste)
   average: number;   // moyenne non arrondie
 }
 
 export interface EffectiveStats {
   stats: MonsterStats;
+  // Défense de la créature (point de vue MJ) : stats[defenseStatKey] + modificateurs de traits (Robuste, Vigoureux...)
   defense: number;
+  // Stat sur laquelle la Défense est basée : 'quick' par défaut, ou la stat de remplacement
+  // si un talent passif de type Tacticien II (replaceStat sourceAction 'defense') est actif.
+  defenseStatKey: StatKey;
+  // Taille de dé de l'arme naturelle/mains nues (4 par défaut, 6/8/10 selon le rang du trait Arme Naturelle)
+  naturalWeaponSides: number;
   armorBonusFromTraits: number;
   damageBonusFromTraits: number;
   damageDiceFromTraits: string[];
@@ -86,13 +90,13 @@ function applyPassiveEffect(
   rank: number,
   ctx: {
     stats: MonsterStats;
+    defenseModifierFromTraits: { value: number };
     armorBonusFromTraits: { value: number };
     damageBonusFromTraits: { value: number };
     damageDiceFromTraits: string[];
     activeReplaceStats: EffectiveStats['activeReplaceStats'];
     specialEffects: string[];
   },
-  skipDefenseModifier = false,
 ) {
   const label = `${abilityName} ${levelLabel(rank as 1 | 2 | 3)}`
 
@@ -101,11 +105,10 @@ function applyPassiveEffect(
       if (value !== undefined) ctx.stats[key] += value
     }
   }
-  // BUG 1 FIX — defenseModifier appliqué directement sur stats.quick (Agilité effective)
-  // Vigoureux/Robuste: valeur totale par rang (pas un delta cumulatif) → skipDefenseModifier
-  // empêche les rangs inférieurs d'être additionnés au rang max.
-  if (effect.defenseModifier !== undefined && !skipDefenseModifier) {
-    ctx.stats.quick += effect.defenseModifier
+  // Le defenseModifier (Robuste, Vigoureux...) ne doit PAS toucher la stat Agilité générale :
+  // il n'intervient que dans le calcul de la case DÉFENSE, via un accumulateur séparé.
+  if (effect.defenseModifier !== undefined) {
+    ctx.defenseModifierFromTraits.value += effect.defenseModifier
   }
   if (effect.armorBonus !== undefined && effect.armorBonus !== 0) {
     ctx.armorBonusFromTraits.value += effect.armorBonus
@@ -129,6 +132,13 @@ function applyPassiveEffect(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Taille de dé de l'arme naturelle / attaque à mains nues, selon le rang du trait Arme Naturelle
+// (règle implicite du livre : 1d4 de base, 1d6/1d8/1d10 aux rangs I/II/III)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const NATURAL_WEAPON_SIDES: Record<0 | 1 | 2 | 3, number> = { 0: 4, 1: 6, 2: 8, 3: 10 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Calcul principal
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -146,6 +156,7 @@ export function calculateEffectiveStats(monster: Monster): EffectiveStats {
   }
 
   // 2. Accumulateurs
+  const defenseModifierFromTraits = { value: 0 }
   const armorBonusFromTraits = { value: 0 }
   const damageBonusFromTraits = { value: 0 }
   const damageDiceFromTraits: string[] = []
@@ -155,6 +166,7 @@ export function calculateEffectiveStats(monster: Monster): EffectiveStats {
 
   const ctx = {
     stats,
+    defenseModifierFromTraits,
     armorBonusFromTraits,
     damageBonusFromTraits,
     damageDiceFromTraits,
@@ -164,6 +176,7 @@ export function calculateEffectiveStats(monster: Monster): EffectiveStats {
 
   // 3. Parcourir toutes les capacités du monstre
   const allSelected = [...monster.talents, ...monster.traits]
+  let naturalWeaponRank = 0
 
   for (const selected of allSelected) {
     const ability = resolveAbility(selected.id)
@@ -171,24 +184,27 @@ export function calculateEffectiveStats(monster: Monster): EffectiveStats {
 
     const level = selected.level as 1 | 2 | 3
 
+    if (selected.id === 'arme-naturelle') {
+      naturalWeaponRank = Math.max(naturalWeaponRank, level)
+    }
+
     // 3a. Calculer l'ensemble des rangs remplacés par un rang supérieur
     const replacedRanks = new Set<number>()
     for (let i = 1; i <= level; i++) {
       const eff = ability.effects[i as 1 | 2 | 3]
-      if (eff.isReplacementFor !== undefined) {
-        replacedRanks.add(eff.isReplacementFor)
-      }
+      if (eff.isReplacementFor !== undefined) replacedRanks.add(eff.isReplacementFor)
     }
 
-    // 3b. Appliquer cumulativement TOUS les rangs passive/special jusqu'au niveau du monstre.
-    // Exception : pour les rangs 'special'/'passive', le defenseModifier de chaque rang représente
-    // la valeur totale (ex: "Agilité - 3"), pas un delta. On n'applique donc ce champ
-    // qu'au rang le plus élevé pour éviter de les additionner.
+    // 3b. Appliquer les rangs passive/special non remplacés jusqu'au niveau du monstre.
+    // Les rangs marqués `isReplacementFor` décrivent la valeur TOTALE à ce rang (pas un delta
+    // cumulatif : ex. Robuste III = [Agilité - 4], pas [Agilité - 2 - 3 - 4]) — on ne garde donc
+    // que le(s) rang(s) non remplacé(s), pour tous les champs (defenseModifier, armorBonus,
+    // damageBonus, damageDice, statModifiers).
     for (let i = 1; i <= level; i++) {
+      if (replacedRanks.has(i)) continue
       const eff = ability.effects[i as 1 | 2 | 3]
       if (eff.activation === 'passive' || eff.activation === 'special') {
-        const skipDefenseModifier = (eff.activation === 'special' || eff.activation === 'passive') && i < level
-        applyPassiveEffect(eff, ability.name, i, ctx, skipDefenseModifier)
+        applyPassiveEffect(eff, ability.name, i, ctx)
       }
     }
 
@@ -213,6 +229,8 @@ export function calculateEffectiveStats(monster: Monster): EffectiveStats {
     }
   }
 
+  const naturalWeaponSides = NATURAL_WEAPON_SIDES[naturalWeaponRank as 0 | 1 | 2 | 3]
+
   // 4. Dés offensifs Vigoureux — non présents dans les données data/, hardcodés ici
   // (règle du livre : inflige 1d4/1d6/1d8 supplémentaires par rang)
   const VIGOUREUX_OFFENSE: Record<1|2|3, string> = { 1: '1d4', 2: '1d6', 3: '1d8' }
@@ -223,7 +241,7 @@ export function calculateEffectiveStats(monster: Monster): EffectiveStats {
     }
   }
 
-  // 5. Protection cutanée (PEAU) — Vigoureux (dés) ou Robuste (fixe)
+  // 5. Protection cutanée (PEAU) — Vigoureux ou Robuste, toujours exprimée en dé
   let skinProtection: SkinProtection | null = null
   for (const sel of allSelected) {
     if (sel.id === 'vigoureux') {
@@ -241,40 +259,42 @@ export function calculateEffectiveStats(monster: Monster): EffectiveStats {
       const ability = resolveAbility('robuste')
       if (ability) {
         const lvl = sel.level as 1|2|3
-        const fixed = ability.effects[lvl].damageBonus ?? 0
+        const dice = ability.effects[lvl].damageDice
+        const sides = dice ? parseInt(dice.split('d')[1], 10) : 0
         skinProtection = {
           source: `Robuste ${levelLabel(lvl)}`,
-          fixed,
-          average: fixed,
+          dice,
+          average: sides ? (1 + sides) / 2 : 0,
         }
       }
       break
     }
   }
 
-  // 6. Calcul de la Défense finale (stats.quick est déjà l'Agilité effective après BUG 1 fix)
-  const defense = stats.quick + monster.defenseBonus
+  // 6. Calcul de la Défense (point de vue MJ) : stat de base (Agilité, ou remplacement via
+  // un talent passif type Tacticien II) + modificateurs de traits (Robuste, Vigoureux...).
+  // Le champ monster.defenseBonus n'est PAS additionné : c'est une valeur dérivée (10 - Défense),
+  // affichée séparément comme bonus/malus d'attaque pour les joueurs (cf. playerModifiers.attackModifier).
+  const defensePlacement = activeReplaceStats.find(rs => rs.sourceAction === 'defense')
+  const defenseStatKey: StatKey = defensePlacement ? defensePlacement.useStat : 'quick'
+  const defense = stats[defenseStatKey] + defenseModifierFromTraits.value
 
   // 7. Modificateurs joueur
-  // BUG 1: attackModifier utilise l'Agilité EFFECTIVE (stats.quick, pas baseStats.quick)
-  // BUG 2: si un replaceStat passif existe pour meleeAttack (ex: Poigne de fer), DEF JOUEUR
-  //        utilise la stat de remplacement au lieu de Précision
+  // ATT JOUEUR = 10 - Défense de la créature (pas 10 - Agilité brute)
+  // DÉF JOUEUR = 10 - stat d'attaque de la créature (Précision, ou remplacement type Poigne de Fer)
   const meleePlacement = activeReplaceStats.find(rs => rs.sourceAction === 'meleeAttack')
   const defenseBaseStat: StatKey = meleePlacement ? meleePlacement.useStat : 'accurate'
-  // Si le monstre a un talent passif qui remplace sa stat de défense (ex: Tacticien II = Astuce),
-  // alors ATT JOUEUR utilise cette stat au lieu d'Agilité
-  const defensePlacement = activeReplaceStats.find(rs => rs.sourceAction === 'defense')
-  const attackBaseStat: StatKey = defensePlacement ? defensePlacement.useStat : 'quick'
   const playerModifiers: PlayerModifiers = {
-    attackModifier:  10 - stats[attackBaseStat],
+    attackModifier:  10 - defense,
     defenseModifier: 10 - stats[defenseBaseStat],
-    attackBaseStat,
     defenseBaseStat,
   }
 
   return {
     stats,
     defense,
+    defenseStatKey,
+    naturalWeaponSides,
     armorBonusFromTraits: armorBonusFromTraits.value,
     damageBonusFromTraits: damageBonusFromTraits.value,
     damageDiceFromTraits,

@@ -98,18 +98,17 @@ export const MONSTROUS_TRAITS: Record<string, TalentOrTrait> = {
     effects: {
       1: {
         activation: 'passive',
-        damageDice: '1d4',
         customText: 'Passif: La créature est pourvue d’une arme naturelle qui inflige 1d6 dégâts au lieu de 1d4 points pour ' +
             'les attaques désarmées normales.',
       },
       2: {
         activation: 'passive',
-        damageDice: '1d4',
+        isReplacementFor: 1,
         customText: 'Passif: L’attaque naturelle de la créature inflige 1d8 points de dégâts.',
       },
       3: {
         activation: 'passive',
-        damageDice: '1d4',
+        isReplacementFor: 2,
         customText:
           'Passif: L’attaque naturelle de la créature inflige 1d10 points de dégâts. ' +
             'L’arme naturelle est désormais considérée comme une arme Longue, ce qui permet à la créature d’effectuer une ' +
@@ -136,11 +135,13 @@ export const MONSTROUS_TRAITS: Record<string, TalentOrTrait> = {
       },
       2: {
         activation: 'passive',
+        isReplacementFor: 1,
         armorBonus: 3,
         customText: 'Passif: armure naturelle 3',
       },
       3: {
         activation: 'passive',
+        isReplacementFor: 2,
         armorBonus: 4,
         customText: 'Passif: armure naturelle 4',
       },
@@ -520,7 +521,7 @@ export const MONSTROUS_TRAITS: Record<string, TalentOrTrait> = {
       1: {
         activation: 'passive',
         defenseModifier: -2,
-        damageBonus: 2,
+        damageDice: '1d4',
         customText:
           'Passif:  La créature ignore 1d4 points de dégâts à chaque\n' +
             'coup, en plus de l’armure qu’elle porte. Une fois par tour, la\n' +
@@ -530,8 +531,9 @@ export const MONSTROUS_TRAITS: Record<string, TalentOrTrait> = {
       },
       2: {
         activation: 'passive',
+        isReplacementFor: 1,
         defenseModifier: -3,
-        damageBonus: 3,
+        damageDice: '1d6',
         customText:
           'Passif:  La créature ignore 1d6 points de dégâts à chaque\n' +
             'coup, en plus de l’armure qu’elle porte. Une fois par tour, la\n' +
@@ -541,8 +543,9 @@ export const MONSTROUS_TRAITS: Record<string, TalentOrTrait> = {
       },
       3: {
         activation: 'passive',
+        isReplacementFor: 2,
         defenseModifier: -4,
-        damageBonus: 4,
+        damageDice: '1d8',
         customText:
           'Passif:  La créature ignore 1d8 points de dégâts à chaque\n' +
             'coup, en plus de l’armure qu’elle porte. Une fois par tour, la\n' +

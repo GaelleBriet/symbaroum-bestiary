@@ -7,7 +7,7 @@ import { WEAPONS, ARMORS } from '@/data/equipment'
 import { TALENTS } from '@/data/talents'
 import { TRAITS } from '@/data/traits'
 import { MONSTROUS_TRAITS } from '@/data/monstrousTraits'
-import {  calculateArmorFormula, diceAverage, calculateTotalDamage } from '@/logic/damageCalculator'
+import {  calculateArmorFormula, diceAverage, calculateTotalDamage, resolveWeaponSides } from '@/logic/damageCalculator'
 import type { Monster } from '@/types/monster'
 import type { TalentOrTrait, ActivationType } from '@/types/rules'
 
@@ -53,8 +53,8 @@ const catalogArmor = computed(() => {
 })
 
 function weaponDiceLabel(w: typeof catalogWeapons.value[0]): string {
-  if (w.catalog) return `1d${w.catalog.damage.sides}`
-  return w.stored.damage > 0 ? `1d${w.stored.damage}` : '—'
+  const sides = resolveWeaponSides(w.stored, effective.value.naturalWeaponSides)
+  return sides > 0 ? `1d${sides}` : '—'
 }
 
 // function weaponQualityNote(w: typeof catalogWeapons.value[0]): string {
@@ -85,9 +85,10 @@ const armorAvg = computed(() => {
   return diceAverage(catalogArmor.value.protection.sides)
 })
 const skinProtection = computed(() => effective.value.skinProtection)
+const naturalArmor = computed(() => effective.value.armorBonusFromTraits)
 const absorptionTotal = computed(() => {
   const skin = skinProtection.value?.average ?? 0
-  return Math.round((armorAvg.value + skin) * 10) / 10
+  return Math.round((armorAvg.value + skin + naturalArmor.value) * 10) / 10
 })
 
 // ─── XP total ─────────────────────────────────────────────────────────────────
@@ -105,9 +106,15 @@ const totalXP = computed(() =>
 // La stat "bleue" suit la substitution active : accurate par défaut, ou la stat
 // de remplacement si un talent type Poigne de fer est actif.
 const blueStatKey = computed(() => effective.value.playerModifiers.defenseBaseStat)
-// La stat "rouge" suit la stat de défense du monstre (ATT JOUEUR) : quick par défaut,
-// ou la stat de remplacement si un talent passif type Tacticien II est actif.
-const redStatKey = computed(() => effective.value.playerModifiers.attackBaseStat)
+// La stat "rouge" suit la stat de défense du monstre (ATT JOUEUR / case DÉFENSE) : quick
+// par défaut, ou la stat de remplacement si un talent passif type Tacticien II est actif.
+const redStatKey = computed(() => effective.value.defenseStatKey)
+
+// ─── Bonus efficient (10 - stat effective), affiché dans le tableau Attributs ─────────────
+function statBonusLabel(value: number): string {
+  const bonus = 10 - value
+  return bonus >= 0 ? `+${bonus}` : `${bonus}`
+}
 
 // ─── DEF JOUEUR label dynamique ───────────────────────────────────────────────
 const STAT_LABELS_FR: Record<string, string> = {
@@ -123,8 +130,10 @@ const STAT_LABELS_FR: Record<string, string> = {
 const defJoueurStatLabel = computed(() =>
   STAT_LABELS_FR[effective.value.playerModifiers.defenseBaseStat] ?? effective.value.playerModifiers.defenseBaseStat
 )
-const attJoueurStatLabel = computed(() =>
-  STAT_LABELS_FR[effective.value.playerModifiers.attackBaseStat] ?? effective.value.playerModifiers.attackBaseStat
+// Stat sur laquelle est basée la Défense de la créature (Agilité par défaut, ou remplacement
+// type Tacticien II) — utilisée pour la légende de la case DÉFENSE.
+const defenseStatLabel = computed(() =>
+  STAT_LABELS_FR[effective.value.defenseStatKey] ?? effective.value.defenseStatKey
 )
 
 // ─── Résistance badge ─────────────────────────────────────────────────────────
@@ -258,8 +267,9 @@ function toggleItem(key: string) {
             :style="`color:${resistanceStyle(monster.resistance).color}; border:1px solid ${resistanceStyle(monster.resistance).border}; background:${resistanceStyle(monster.resistance).bg};`"
           >{{ monster.resistance }}</span>
         </div>
-        <p class="text-[11px] truncate" style="color:#7a6e52;">
-          {{ monster.race }}<template v-if="monster.description"> · {{ monster.description }}</template>
+        <p class="truncate">
+          <span class="font-semibold" style="font-size:13px; color:#b8a87a;">{{ monster.race }}</span>
+          <template v-if="monster.description"><span class="text-[11px]" style="color:#7a6e52;"> · {{ monster.description }}</span></template>
         </p>
       </div>
 
@@ -270,8 +280,8 @@ function toggleItem(key: string) {
           <div class="flex items-baseline gap-1">
             <span class="font-cinzel font-bold transition-colors" style="font-size:26px;" :style="`color:${enduranceColor};`">{{ current }}</span>
             <span class="text-sm" style="color:#7a6e52;">/ {{ monster.endurance }}</span>
-            <span class="ml-1" style="font-size:11px; color:#7a6e52;">seuil {{ monster.painResistance }}</span>
           </div>
+          <p class="mt-0.5" style="font-size:14px; font-weight:700; color:#c87d2a;">Seuil {{ monster.painResistance }}</p>
         </div>
         <div class="shrink-0 h-2 rounded overflow-hidden" style="width:112px; background:#2a251c;">
           <div
@@ -301,7 +311,7 @@ function toggleItem(key: string) {
               <tr class="text-[9px] uppercase text-sym-text3">
                 <th class="text-left pb-1 font-normal w-16">Stat</th>
                 <th class="text-center pb-1 font-normal">Brut</th>
-                <th class="text-center pb-1 font-semibold" style="color:#c87d2a;">Eff.</th>
+                <th class="text-center pb-1 font-semibold" style="color:#c87d2a;">Bonus</th>
               </tr>
             </thead>
             <tbody>
@@ -340,7 +350,7 @@ function toggleItem(key: string) {
                     ? 'color:#c87d2a;'
                     : 'color:#e8d5a3;'"
                 >
-                  {{ effective.stats[s.key] }}
+                  {{ statBonusLabel(effective.stats[s.key]) }}
                 </td>
               </tr>
             </tbody>
@@ -375,7 +385,7 @@ function toggleItem(key: string) {
               {{ effective.playerModifiers.attackModifier >= 0 ? '+' : '' }}{{ effective.playerModifiers.attackModifier }}
             </p>
             <p class="text-[10px] mt-1" style="color:#7a6e52;">
-              10 − {{ attJoueurStatLabel }} ({{ effective.stats[effective.playerModifiers.attackBaseStat] }})
+              10 − Défense ({{ effective.defense }})
             </p>
           </div>
           <div class="rounded-md border text-center p-3" style="background:#080f18; border-color:#1a2a3a;">
@@ -394,7 +404,10 @@ function toggleItem(key: string) {
           <div class="rounded-md border p-3 text-center" style="background:#1a1712; border-color:#332d21;">
             <p class="text-[9px] uppercase tracking-wide text-sym-text3 mb-1">Défense</p>
             <p class="font-cinzel font-bold text-2xl text-sym-text">{{ effective.defense }}</p>
-            <p class="text-[10px] text-sym-text3 mt-0.5">base Agilité</p>
+            <p class="text-[10px] text-sym-text3 mt-0.5">base {{ defenseStatLabel }}</p>
+            <p class="text-[11px] font-semibold mt-1" style="color:#c84040;">
+              {{ effective.playerModifiers.attackModifier >= 0 ? '+' : '' }}{{ effective.playerModifiers.attackModifier }} ATT joueurs
+            </p>
           </div>
           <div class="rounded-md border p-3 text-center" style="background:#1a1712; border-color:#332d21;">
             <p class="text-[9px] uppercase tracking-wide text-sym-text3 mb-1">ATT CAC</p>
@@ -425,10 +438,14 @@ function toggleItem(key: string) {
                 <p class="text-[9px] uppercase text-sym-text3">Armure</p>
                 <p class="text-xs font-semibold text-sym-text2">{{ armorAvg > 0 ? armorAvg : '—' }}</p>
               </div>
+              <div v-if="naturalArmor > 0">
+                <p class="text-[9px] uppercase text-sym-text3">Naturelle</p>
+                <p class="text-xs font-semibold text-sym-text2">+{{ naturalArmor }}</p>
+              </div>
               <div v-if="skinProtection">
                 <p class="text-[9px] uppercase text-sym-text3">Peau</p>
                 <p class="text-xs font-semibold text-sym-text2">
-                  {{ skinProtection.dice ?? skinProtection.fixed }}
+                  {{ skinProtection.dice }}
                   <span class="text-sym-text3">({{ skinProtection.average }})</span>
                 </p>
               </div>
@@ -438,7 +455,7 @@ function toggleItem(key: string) {
 
         <!-- Équipement -->
         <div v-if="catalogWeapons.length > 0 || monster.equipment?.other?.length">
-          <p class="text-[9px] font-bold uppercase tracking-widest text-sym-text3 pb-2 border-b border-sym-border mb-2">Équipement</p>
+          <p class="text-[9px] font-bold uppercase tracking-widest text-sym-text3 pb-2 border-b border-sym-border mb-2">Armes</p>
           <div class="space-y-1.5">
             <div v-for="w in catalogWeapons" :key="w.stored.id" class="flex items-center gap-2">
               <span class="text-xs text-sym-text2">{{ w.catalog?.name ?? w.stored.name ?? w.stored.id }}</span>
