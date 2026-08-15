@@ -3,12 +3,22 @@
 import { getQuality } from '@/data/qualities'
 import { WEAPONS } from '@/data/equipment'
 import type { Weapon, Armor } from '@/types/rules'
-import type { Monster } from '@/types/monster'
+import type { Monster, MonsterWeapon } from '@/types/monster'
 import type { EffectiveStats } from '@/logic/mechanics'
 
 // Moyenne d'un dé à N faces. Ne jamais arrondir ici — arrondir uniquement le total final.
 export function diceAverage(sides: number): number {
   return (1 + sides) / 2
+}
+
+// Taille de dé effective d'une arme de monstre : celle du catalogue si l'arme y figure
+// (arme manufacturée), sinon celle de l'arme naturelle/mains nues du monstre (dépend du
+// rang du trait Arme Naturelle — voir naturalWeaponSides dans mechanics.ts). Le champ brut
+// `damage` stocké sur les armes non cataloguées (griffes, morsure, défenses...) n'est PAS
+// un nombre de faces de dé et ne doit jamais être utilisé comme tel.
+export function resolveWeaponSides(w: MonsterWeapon, naturalWeaponSides: number): number {
+  const catalog = Object.values(WEAPONS).find(c => c.id === w.id)
+  return catalog ? catalog.damage.sides : naturalWeaponSides
 }
 
 export function calculateWeaponFormula(weapon: Weapon): string {
@@ -77,7 +87,7 @@ export function calculateTotalDamage(
   // 1. Dés de l'arme équipée + bonus qualités
   for (const w of monster.equipment?.weapons ?? []) {
     const catalog = Object.values(WEAPONS).find(c => c.id === w.id)
-    const sides = catalog ? catalog.damage.sides : w.damage
+    const sides = resolveWeaponSides(w, effectiveStats.naturalWeaponSides)
     const weaponName = catalog?.name ?? w.name ?? w.id
     if (sides > 0) {
       diceParts.push(`1d${sides} (${weaponName})`)
