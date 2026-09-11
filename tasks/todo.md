@@ -77,5 +77,23 @@ Cause racine trouvée : `statModifiers` corrompu sur les 35 monstres (= `10 - ba
 - Autres talents à rangs potentiellement cumulatifs à auditer avec la même grille que Robuste/Armure Naturelle/Arme Naturelle (ex. Poigne de Fer III qui devrait sans doute remplacer le II, pas s'additionner).
 - Armes non cataloguées sur le reste du bestiaire (ex. `epee-rouille` du Dragoul) : retombent maintenant sur le dé "mains nues" par défaut (1d4 sauf Arme Naturelle) faute de correspondance dans `equipment.ts` — correct pour les créatures aux griffes/crocs, mais pas idéal pour une "vraie" arme manufacturée mal identifiée. À vérifier monstre par monstre si besoin.
 
+### MODE DÉMO — ✅ CODE TERMINÉ (11 sept. 2026)
 
+Raison : l'application en ligne s'ouvre sur un écran de connexion, un visiteur (client,
+recruteur, page d'étude de cas du portfolio) ne voit rien de l'outil. Un compte de test
+public aurait exposé des identifiants modifiables par n'importe qui.
+
+- [x] `src/lib/demo.ts` — `isDemoMode` lu depuis l'URL (`/?demo`), `enterDemo()` / `exitDemo()`
+- [x] `db.ts` — base Dexie séparée en démo (`SymbaroumBestiaryDemo`)
+- [x] `authStore` — en démo, aucune session lue (`userId` null → aucune synchro Supabase)
+- [x] `monsterStore.seedDemoIfEmpty()` — Scrofar Corrompu, Haut Troll, Elfe d'Automne, Aranéa à la première ouverture
+- [x] `LoginForm` — bouton « Découvrir sans compte » + mention « rien n'est enregistré en ligne »
+- [x] `AuthStatusBar` — badge « Démo », bouton « Quitter la démo »
+- [x] `.env.example` + README (démo, lancement local)
+
+**Vérifié** : `vue-tsc` + build OK ; parcours testé dans Chromium sur le build (connexion → démo →
+4 créatures → ajout d'un prédéfini → fiche → rechargement conservé → quitter la démo) ;
+0 requête vers Supabase, 0 erreur console, seule la base `SymbaroumBestiaryDemo` créée.
+**Non vérifié** : connexion réelle avec le compte du MJ après ce changement (pas d'identifiants
+dans cet environnement) — à tester une fois avant de merger.
 

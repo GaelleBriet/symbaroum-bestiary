@@ -12,7 +12,9 @@ const store = useMonsterStore()
 const authStore = useAuthStore()
 
 async function bootstrapData() {
-  if (authStore.userId) {
+  if (authStore.isDemo) {
+    await store.seedDemoIfEmpty()
+  } else if (authStore.userId) {
     try {
       await store.hydrateFromCloud(authStore.userId)
       authStore.isOffline = false
@@ -26,7 +28,7 @@ async function bootstrapData() {
 
 onMounted(async () => {
   await authStore.init()
-  if (authStore.isAuthenticated) {
+  if (authStore.isAuthenticated || authStore.isDemo) {
     await bootstrapData()
   }
 })
@@ -56,7 +58,7 @@ async function handleSave(data: Omit<Monster, 'id' | 'createdAt'>) {
     Chargement…
   </div>
 
-  <LoginForm v-else-if="!authStore.isAuthenticated" />
+  <LoginForm v-else-if="!authStore.isAuthenticated && !authStore.isDemo" />
 
   <div v-else class="h-screen overflow-hidden bg-sym-bg font-sans">
     <MonsterList v-if="store.currentView === 'list'" />

@@ -13,6 +13,7 @@ En jeu de rôle, calculer les statistiques effectives d'un monstre (une fois mod
 - Calcul automatique des statistiques effectives (Défense, Armure, Dégâts) à partir des traits et talents appliqués
 - Recherche et filtrage par nom, race, résistance
 - Stockage local, fonctionne hors-ligne
+- Mode démo sans compte : [symbaroum-bestiary.vercel.app/?demo](https://symbaroum-bestiary.vercel.app/?demo)
 
 ## Stack technique
 
@@ -39,9 +40,19 @@ Projet actif, en développement continu, utilisé en conditions réelles de jeu.
 
 
 
+## Mode démo
+
+L'adresse `/?demo` (ou le bouton « Découvrir sans compte » de l'écran de connexion) ouvre
+l'application sans compte, avec quatre créatures officielles déjà chargées. La démo utilise
+une base locale séparée (`SymbaroumBestiaryDemo`) et n'appelle jamais Supabase : ce que le
+visiteur crée reste dans son navigateur, et les données du compte réel ne sont jamais touchées.
+
 ## Installation locale
 
 ```bash
 npm install
+cp .env.example .env.local   # puis renseigner les deux valeurs Supabase
 npm run dev
 ```
+
+Le mode démo fonctionne même sans valeurs Supabase valides : il ne les utilise pas.
