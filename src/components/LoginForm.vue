@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
+import { enterDemo } from '@/lib/demo'
 
 const authStore = useAuthStore()
 
@@ -59,6 +60,19 @@ async function handleSubmit() {
       >
         {{ isSubmitting ? 'Connexion…' : 'Se connecter' }}
       </button>
+
+      <div class="pt-4 border-t border-sym-border space-y-2 text-center">
+        <button
+          type="button"
+          @click="enterDemo()"
+          class="w-full border border-sym-border2 hover:border-sym-adim text-sym-text2 hover:text-sym-text px-3 py-2 rounded text-sm transition-colors"
+        >
+          Découvrir sans compte
+        </button>
+        <p class="text-xs text-sym-text3">
+          Mode démo : vos monstres restent dans ce navigateur, rien n'est enregistré en ligne.
+        </p>
+      </div>
     </form>
   </div>
 </template>

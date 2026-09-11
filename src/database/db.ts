@@ -3,9 +3,11 @@
 
 import Dexie, { type EntityTable } from 'dexie'
 import type { Monster } from '@/types/monster'
+import { isDemoMode } from '@/lib/demo'
 
-// On étend Dexie pour typer nos tables
-const db = new Dexie('SymbaroumBestiary') as Dexie & {
+// On étend Dexie pour typer nos tables.
+// En mode démo, base séparée : la démo ne voit ni ne modifie jamais les monstres du compte réel.
+const db = new Dexie(isDemoMode ? 'SymbaroumBestiaryDemo' : 'SymbaroumBestiary') as Dexie & {
   monsters: EntityTable<Monster, 'id'>
 }
 

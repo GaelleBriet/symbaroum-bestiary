@@ -16,6 +16,8 @@ import {
   deleteMonsterRemote,
 } from '@/logic/supabaseSync'
 import { useAuthStore } from '@/stores/authStore'
+import { MONSTERS } from '@/data/monsters'
+import { DEMO_SEED_IDS } from '@/lib/demo'
 
 export const useMonsterStore = defineStore('monsters', () => {
   // ─── État ────────────────────────────────────────────────────────────────
@@ -92,6 +94,17 @@ export const useMonsterStore = defineStore('monsters', () => {
       monsters.value = await db.monsters.orderBy('createdAt').toArray()
     } finally {
       isLoading.value = false
+    }
+  }
+
+  // ─── Démo : quelques créatures officielles à la première ouverture ───────
+  async function seedDemoIfEmpty() {
+    if (await db.monsters.count() > 0) return
+    for (const id of DEMO_SEED_IDS) {
+      const preset = Object.values(MONSTERS).find((m) => m.id === id)
+      if (!preset) continue
+      const { id: _id, createdAt: _ct, ...rest } = preset
+      await dbCreate({ ...rest, isCustom: false })
     }
   }
 
@@ -192,6 +205,7 @@ export const useMonsterStore = defineStore('monsters', () => {
     // Actions
     loadAll,
     hydrateFromCloud,
+    seedDemoIfEmpty,
     addMonster,
     updateMonster,
     deleteMonster,
