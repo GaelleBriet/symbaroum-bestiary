@@ -62,15 +62,23 @@ Cause racine trouvée : `statModifiers` corrompu sur les 35 monstres (= `10 - ba
 - [x] Bug 2 — Bonus efficient Agilité modifié par Robuste/Vigoureux (isolé dans le calcul de Défense uniquement)
 - [x] Bug 3 — ATT JOUEUR = `10 - Défense` (pas `10 - Agilité`)
 - [x] Bug 4 — Défense fausse (Scrofar : 13 Agi - 4 Robuste III = 9) ; `defenseBonus` n'est plus additionné, recalculé comme `10 - Défense` et affiché en second nombre dans la case Défense ("+1 ATT joueurs")
-- [x] Bug 5 — Dégâts : moyenne statistique (pas le max), dés de base des Défenses corrigés (1d8 défenses + 1d8 Robuste III + 1d4 Poigne de fer II = 11,5)
+- [x] Bug 5 — Dégâts : moyenne statistique (pas le max), dés de base des Défenses corrigés (1d10 Défenses [Arme Naturelle III] + 1d8 Robuste III + 1d4 Poigne de fer II = 12,5 — corrigé le 21 sept. 2026, cf. erratum ci-dessous)
 - [x] Bug 6 — "Équipement" renommé "Armes"
 - [x] Bug 7 — Dé de l'arme naturelle dérivé du rang du trait Arme Naturelle (1d4→1d6→1d8→1d10), plus lu depuis le champ brut `damage`
 - [x] Amélioration 1 — Catégorie de la créature (race) agrandie sous le nom
 - [x] Amélioration 2 — Seuil de blessure agrandi sous Endurance
 - [x] Bonus trouvé en creusant (non demandé mais même famille de bug) : Absorption incluait pas le bonus d'Armure Naturelle, jamais affiché ; rangs I/II/III d'Armure Naturelle cumulés au lieu du rang max
 
-**Vérifié** : `vue-tsc --noEmit` sans erreur ; logique validée en exécutant `calculateEffectiveStats`/`calculateTotalDamage` directement sur les données réelles de Scrofar et Kanaran — tous les résultats correspondent exactement aux calculs manuels de Paul (Défense 9/+1, Défense Kanaran 14/-4, Dégâts 11,5).
+**Vérifié** : `vue-tsc --noEmit` sans erreur ; logique validée en exécutant `calculateEffectiveStats`/`calculateTotalDamage` directement sur les données réelles de Scrofar et Kanaran — tous les résultats correspondent exactement aux calculs manuels de Paul (Défense 9/+1, Défense Kanaran 14/-4, Dégâts 12,5).
 **Non vérifié** : rendu visuel dans le navigateur — bloqué par l'auth Supabase réelle (compte unique de Paul), pas de credentials disponibles dans cet environnement. À vérifier visuellement par Paul/toi avant de considérer le sprint clos.
+
+**Erratum (21 sept. 2026)** : le chiffre "Dégâts 11,5" écrit ci-dessus lors de la clôture initiale
+de ce sprint était faux — calculé à la main avec 1d8 (comme si Arme Naturelle était au rang II),
+alors que la fiche officielle du Scrofar Corrompu indique bien Arme Naturelle **(III)**. Le code
+et la donnée (`level: 3` dans `monsters.ts`) étaient corrects depuis le début ; seul ce chiffre
+"vérifié à la main" était erroné, jamais recroisé avec la fiche officielle. Vrai total : 12,5.
+Trouvé lors d'une revue qualité/sécurité complète de `main`, confirmé avec la fiche officielle.
+Voir aussi l'erratum dans `tasks/lessons.md`.
 
 **Suivi / dette identifiée (pas fait, à trier)** :
 - Champ `defenseBonus` devenu inutilisé dans le calcul (remplacé par une valeur dérivée) — encore présent dans `Monster`/`MonsterForm.vue`/les données. À nettoyer (retirer du formulaire ?) si vous validez qu'il ne sert plus à rien.
