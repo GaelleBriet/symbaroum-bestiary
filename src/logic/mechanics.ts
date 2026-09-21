@@ -2,7 +2,7 @@
 // Moteur de calcul des Stats Effectives Symbaroum — Logique pure (pas d'effets de bord)
 
 import type { Monster, MonsterStats } from '@/types/monster'
-import type { StatKey, TalentEffect } from '@/types/rules'
+import type { ActivationType, StatKey, TalentEffect, TalentOrTrait } from '@/types/rules'
 import { TALENTS } from '@/data/talents'
 import { TRAITS } from '@/data/traits'
 import { MONSTROUS_TRAITS } from '@/data/monstrousTraits'
@@ -25,6 +25,24 @@ export interface ActiveAbility {
   talentId: string;
   rank: number;
   activation: 'free' | 'active' | 'reactive';
+  customText?: string;
+  defenseModifier?: number;
+  damageBonus?: number;
+  damageDice?: string;
+  armorBonus?: number;
+  replaceStat?: { sourceAction: string; useStat: StatKey };
+}
+
+// Comme ActiveAbility, mais pour TOUS les types d'activation (y compris passif/spécial) —
+// utilisé pour l'affichage exhaustif des fiches de capacités (écran détail monstre), alors
+// qu'ActiveAbility ne sert qu'aux capacités "activables" (free/active/reactive).
+export interface AbilityEntry {
+  key: string;
+  abilityName: string;
+  source: string;
+  talentId: string;
+  rank: number;
+  activation: ActivationType;
   customText?: string;
   defenseModifier?: number;
   damageBonus?: number;
@@ -59,6 +77,9 @@ export interface EffectiveStats {
   specialEffects: string[];
   playerModifiers: PlayerModifiers;
   activeAbilities: ActiveAbility[];
+  // Toutes les capacités (traits + talents), tous types d'activation confondus, pour l'affichage
+  // exhaustif des fiches de capacités — voir AbilityEntry.
+  allAbilities: AbilityEntry[];
   // Protection cutanée passive (Vigoureux ou Robuste) — null si aucun
   skinProtection: SkinProtection | null;
 }
@@ -67,7 +88,7 @@ export interface EffectiveStats {
 // Résolution d'un talent ou trait par son ID
 // ─────────────────────────────────────────────────────────────────────────────
 
-function resolveAbility(id: string) {
+export function resolveAbility(id: string): TalentOrTrait | null {
   const allSources = [
     Object.values(TALENTS),
     Object.values(TRAITS),
@@ -78,6 +99,32 @@ function resolveAbility(id: string) {
     if (found) return found
   }
   return null
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rangs non remplacés d'une capacité, jusqu'à son niveau choisi
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Règle "seul le rang le plus élevé compte" : un rang marqué `isReplacementFor` décrit la
+// valeur TOTALE à ce rang (pas un delta cumulatif — ex. Robuste III = [Agilité - 4], pas
+// [Agilité - 2 - 3 - 4]), donc on ne garde que le(s) rang(s) non remplacé(s) jusqu'au niveau
+// choisi. Centralisé ici pour éviter de recalculer ce Set à plusieurs endroits.
+function nonReplacedRanks(
+  ability: TalentOrTrait,
+  level: 1 | 2 | 3,
+): Array<{ rank: 1 | 2 | 3; effect: TalentEffect }> {
+  const replacedRanks = new Set<number>()
+  for (let i = 1; i <= level; i++) {
+    const eff = ability.effects[i as 1 | 2 | 3]
+    if (eff.isReplacementFor !== undefined) replacedRanks.add(eff.isReplacementFor)
+  }
+
+  const result: Array<{ rank: 1 | 2 | 3; effect: TalentEffect }> = []
+  for (let i = 1; i <= level; i++) {
+    if (replacedRanks.has(i)) continue
+    result.push({ rank: i as 1 | 2 | 3, effect: ability.effects[i as 1 | 2 | 3] })
+  }
+  return result
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -188,43 +235,62 @@ export function calculateEffectiveStats(monster: Monster): EffectiveStats {
       naturalWeaponRank = Math.max(naturalWeaponRank, level)
     }
 
-    // 3a. Calculer l'ensemble des rangs remplacés par un rang supérieur
-    const replacedRanks = new Set<number>()
-    for (let i = 1; i <= level; i++) {
-      const eff = ability.effects[i as 1 | 2 | 3]
-      if (eff.isReplacementFor !== undefined) replacedRanks.add(eff.isReplacementFor)
-    }
+    // 3a. Rangs non remplacés (règle "seul le rang le plus élevé compte")
+    const ranks = nonReplacedRanks(ability, level)
 
-    // 3b. Appliquer les rangs passive/special non remplacés jusqu'au niveau du monstre.
-    // Les rangs marqués `isReplacementFor` décrivent la valeur TOTALE à ce rang (pas un delta
-    // cumulatif : ex. Robuste III = [Agilité - 4], pas [Agilité - 2 - 3 - 4]) — on ne garde donc
-    // que le(s) rang(s) non remplacé(s), pour tous les champs (defenseModifier, armorBonus,
-    // damageBonus, damageDice, statModifiers).
-    for (let i = 1; i <= level; i++) {
-      if (replacedRanks.has(i)) continue
-      const eff = ability.effects[i as 1 | 2 | 3]
-      if (eff.activation === 'passive' || eff.activation === 'special') {
-        applyPassiveEffect(eff, ability.name, i, ctx)
+    // 3b. Appliquer les rangs passive/special non remplacés — mutent les accumulateurs
+    // (defenseModifier, armorBonus, damageBonus, damageDice, statModifiers...).
+    for (const { rank, effect } of ranks) {
+      if (effect.activation === 'passive' || effect.activation === 'special') {
+        applyPassiveEffect(effect, ability.name, rank, ctx)
       }
     }
 
     // 3c. Collecter les rangs non-passifs (free/active/reactive) comme capacités activables
-    for (let i = 1; i <= level; i++) {
-      const eff = ability.effects[i as 1 | 2 | 3]
-      if (eff.activation === 'passive' || eff.activation === 'special') continue
-      if (replacedRanks.has(i)) continue
+    for (const { rank, effect } of ranks) {
+      if (effect.activation === 'passive' || effect.activation === 'special') continue
 
       activeAbilities.push({
-        source: `${ability.name} ${levelLabel(i as 1 | 2 | 3)} (${activationLabel(eff.activation)})`,
+        source: `${ability.name} ${levelLabel(rank)} (${activationLabel(effect.activation)})`,
         talentId: ability.id,
-        rank: i,
-        activation: eff.activation,
-        customText: eff.customText,
-        defenseModifier: eff.defenseModifier,
-        damageBonus: eff.damageBonus,
-        damageDice: eff.damageDice,
-        armorBonus: eff.armorBonus,
-        replaceStat: eff.replaceStat,
+        rank,
+        activation: effect.activation,
+        customText: effect.customText,
+        defenseModifier: effect.defenseModifier,
+        damageBonus: effect.damageBonus,
+        damageDice: effect.damageDice,
+        armorBonus: effect.armorBonus,
+        replaceStat: effect.replaceStat,
+      })
+    }
+  }
+
+  // 3d. Fiches de capacités pour l'affichage exhaustif (écran détail monstre, colonne
+  // "Capacités & Talents") : TOUS les types d'activation, y compris passif/spécial — contrairement
+  // à `activeAbilities` ci-dessus qui n'en garde qu'un sous-ensemble pour le calcul des stats.
+  // Ordre [Traits puis Talents] : reproduit l'ordre d'affichage historique de l'écran détail
+  // (distinct de l'ordre [Talents puis Traits] utilisé ci-dessus pour les accumulateurs — ne pas
+  // unifier : cet ordre influence le texte affiché, ex. la formule de Dégâts).
+  const allAbilities: AbilityEntry[] = []
+  for (const selected of [...monster.traits, ...monster.talents]) {
+    const ability = resolveAbility(selected.id)
+    if (!ability) continue
+
+    const level = selected.level as 1 | 2 | 3
+    for (const { rank, effect } of nonReplacedRanks(ability, level)) {
+      allAbilities.push({
+        key: `${ability.id}-${rank}`,
+        abilityName: ability.name,
+        source: `${ability.name} ${levelLabel(rank)} (${activationLabel(effect.activation)})`,
+        talentId: ability.id,
+        rank,
+        activation: effect.activation,
+        customText: effect.customText,
+        defenseModifier: effect.defenseModifier,
+        damageBonus: effect.damageBonus,
+        damageDice: effect.damageDice,
+        armorBonus: effect.armorBonus,
+        replaceStat: effect.replaceStat,
       })
     }
   }
@@ -302,6 +368,7 @@ export function calculateEffectiveStats(monster: Monster): EffectiveStats {
     specialEffects,
     playerModifiers,
     activeAbilities,
+    allAbilities,
     skinProtection,
   }
 }
@@ -335,4 +402,17 @@ export function activationLabel(activation: string): string {
 
 export function painResistanceFromEndurance(endurance: number): number {
   return Math.ceil(endurance / 2)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// XP dépensée en Talents/Traits
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Chaque rang s'achète indépendamment : niveau II = rang I (10) + rang II (30) = 40 XP
+export const XP_PER_RANK: Record<1 | 2 | 3, number> = { 1: 10, 2: 30, 3: 60 }
+
+export function xpForLevel(level: 1 | 2 | 3): number {
+  let total = 0
+  for (let i = 1 as 1 | 2 | 3; i <= level; i++) total += XP_PER_RANK[i as 1 | 2 | 3]
+  return total
 }
