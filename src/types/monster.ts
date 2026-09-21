@@ -81,7 +81,6 @@ export interface Monster {
   resistance: 'Faible' | 'Ordinaire' | 'Éprouvante' | 'Forte' | 'Colossale';
   endurance: number;
   painResistance: number;
-  defenseBonus: number; // Bonus fixe à la Défense (ex: +1 bouclier)
 
   shadow: MonsterShadow;
 

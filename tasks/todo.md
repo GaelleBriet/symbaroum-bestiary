@@ -81,9 +81,12 @@ Trouvé lors d'une revue qualité/sécurité complète de `main`, confirmé avec
 Voir aussi l'erratum dans `tasks/lessons.md`.
 
 **Suivi / dette identifiée (pas fait, à trier)** :
-- Champ `defenseBonus` devenu inutilisé dans le calcul (remplacé par une valeur dérivée) — encore présent dans `Monster`/`MonsterForm.vue`/les données. À nettoyer (retirer du formulaire ?) si vous validez qu'il ne sert plus à rien.
-- Autres talents à rangs potentiellement cumulatifs à auditer avec la même grille que Robuste/Armure Naturelle/Arme Naturelle (ex. Poigne de Fer III qui devrait sans doute remplacer le II, pas s'additionner).
-- Armes non cataloguées sur le reste du bestiaire (ex. `epee-rouille` du Dragoul) : retombent maintenant sur le dé "mains nues" par défaut (1d4 sauf Arme Naturelle) faute de correspondance dans `equipment.ts` — correct pour les créatures aux griffes/crocs, mais pas idéal pour une "vraie" arme manufacturée mal identifiée. À vérifier monstre par monstre si besoin.
+- Autres talents à rangs potentiellement cumulatifs à auditer avec la même grille que Robuste/Armure Naturelle/Arme Naturelle (ex. Poigne de Fer III qui devrait sans doute remplacer le II, pas s'additionner — mais plus ambigu : le rang II est passif/permanent, le rang III est actif "une fois par tour au lieu de", `isReplacementFor` ne capture pas cette sémantique telle quelle. Nécessite réflexion de design avant fix). Mis de côté (21 sept. 2026), à reprendre plus tard.
+- Armes non cataloguées sur le reste du bestiaire — pas seulement `epee-rouille` du Dragoul : au moins 9 armes qui semblent fabriquées (Lance, Épée et hache, Marteau à deux mains, Gourdin à pointes, Couteaux de lancer, Arme à une main/de trait, armes spectrales) retombent sur le dé "mains nues" par défaut faute de correspondance dans `equipment.ts`. Correct pour les créatures aux griffes/crocs (armes réellement naturelles), pas pour ces armes manufacturées mal identifiées. Décision (21 sept. 2026) : reporté, à traiter dans un futur sprint dédié au catalogue d'armes.
+
+**Nettoyé (21 sept. 2026)** :
+- Champ `defenseBonus` retiré entièrement (`types/monster.ts`, `MonsterForm.vue`, les 35 monstres du catalogue) — était devenu une donnée fantôme depuis le fix Scrofar (remplacé par une valeur dérivée, cf. `tasks/lessons.md`), plus jamais lu par le moteur de calcul.
+- `Symbaroum.zip` (+ artefact `Zone.Identifier`) retiré du dépôt et ajouté au `.gitignore` — un binaire de handoff design n'a pas sa place en historique git.
 
 ### MODE DÉMO — ✅ CODE TERMINÉ (11 sept. 2026)
 

@@ -21,3 +21,7 @@ dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Archives / artefacts binaires (ex: exports de design) — ne pas versionner
+*.zip
+*:Zone.Identifier

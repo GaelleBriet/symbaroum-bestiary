@@ -339,8 +339,8 @@ export function calculateEffectiveStats(monster: Monster): EffectiveStats {
 
   // 6. Calcul de la Défense (point de vue MJ) : stat de base (Agilité, ou remplacement via
   // un talent passif type Tacticien II) + modificateurs de traits (Robuste, Vigoureux...).
-  // Le champ monster.defenseBonus n'est PAS additionné : c'est une valeur dérivée (10 - Défense),
-  // affichée séparément comme bonus/malus d'attaque pour les joueurs (cf. playerModifiers.attackModifier).
+  // Le bonus/malus d'attaque des joueurs contre ce monstre est une valeur dérivée (10 - Défense),
+  // affichée séparément (cf. playerModifiers.attackModifier) — jamais stockée sur le monstre.
   const defensePlacement = activeReplaceStats.find(rs => rs.sourceAction === 'defense')
   const defenseStatKey: StatKey = defensePlacement ? defensePlacement.useStat : 'quick'
   const defense = stats[defenseStatKey] + defenseModifierFromTraits.value
