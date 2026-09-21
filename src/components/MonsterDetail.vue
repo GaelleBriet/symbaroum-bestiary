@@ -3,11 +3,13 @@ import { computed, reactive } from 'vue'
 import { useMonsterStore } from '@/stores/monsterStore'
 import AuthStatusBar from '@/components/AuthStatusBar.vue'
 import { calculateEffectiveStats, levelLabel } from '@/logic/mechanics'
-import { WEAPONS, ARMORS } from '@/data/equipment'
+import { findWeapon, findArmor } from '@/data/equipment'
 import { TALENTS } from '@/data/talents'
 import { TRAITS } from '@/data/traits'
 import { MONSTROUS_TRAITS } from '@/data/monstrousTraits'
 import {  calculateArmorFormula, diceAverage, calculateTotalDamage, resolveWeaponSides } from '@/logic/damageCalculator'
+import { STAT_LABELS_FR } from '@/data/stats'
+import { resistanceStyle } from '@/data/resistance'
 import type { Monster } from '@/types/monster'
 import type { TalentOrTrait, ActivationType } from '@/types/rules'
 
@@ -42,25 +44,20 @@ const catalogWeapons = computed(() =>
   (monster.value.equipment?.weapons ?? [])
     .map(w => ({
       stored: w,
-      catalog: Object.values(WEAPONS).find(c => c.id === w.id) ?? null,
+      catalog: findWeapon(w.id) ?? null,
     }))
 )
 
 const catalogArmor = computed(() => {
   const a = monster.value.equipment?.armor
   if (!a) return null
-  return Object.values(ARMORS).find(c => c.id === a.id) ?? null
+  return findArmor(a.id) ?? null
 })
 
 function weaponDiceLabel(w: typeof catalogWeapons.value[0]): string {
   const sides = resolveWeaponSides(w.stored, effective.value.naturalWeaponSides)
   return sides > 0 ? `1d${sides}` : '—'
 }
-
-// function weaponQualityNote(w: typeof catalogWeapons.value[0]): string {
-//  if (w.catalog) return calculateWeaponFormula(w.catalog)
-//  return w.stored.name ?? w.stored.id
-// }
 
 // ─── Combat — dégâts totaux ───────────────────────────────────────────────────
 const totalDamage = computed(() => calculateTotalDamage(monster.value, effective.value))
@@ -117,16 +114,6 @@ function statBonusLabel(value: number): string {
 }
 
 // ─── DEF JOUEUR label dynamique ───────────────────────────────────────────────
-const STAT_LABELS_FR: Record<string, string> = {
-  accurate: 'Précision',
-  strong: 'Force',
-  cunning: 'Astuce',
-  quick: 'Agilité',
-  discreet: 'Discrétion',
-  persuasive: 'Persuasion',
-  resolute: 'Volonté',
-  vigilant: 'Vigilance',
-}
 const defJoueurStatLabel = computed(() =>
   STAT_LABELS_FR[effective.value.playerModifiers.defenseBaseStat] ?? effective.value.playerModifiers.defenseBaseStat
 )
@@ -135,18 +122,6 @@ const defJoueurStatLabel = computed(() =>
 const defenseStatLabel = computed(() =>
   STAT_LABELS_FR[effective.value.defenseStatKey] ?? effective.value.defenseStatKey
 )
-
-// ─── Résistance badge ─────────────────────────────────────────────────────────
-const RESISTANCE_STYLES: Record<string, { color: string; border: string; bg: string }> = {
-  'Faible':    { color: '#6a9a4a', border: '#3a5a2a', bg: '#0a120a' },
-  'Ordinaire': { color: '#b8a87a', border: '#3d3628', bg: '#1a1712' },
-  'Éprouvante':{ color: '#c87d2a', border: '#8b5520', bg: '#1f1508' },
-  'Forte':     { color: '#7ab5e8', border: '#2a4a6a', bg: '#080f18' },
-  'Colossale': { color: '#c870c8', border: '#5a2a5a', bg: '#120a12' },
-}
-function resistanceStyle(r: string) {
-  return RESISTANCE_STYLES[r] ?? RESISTANCE_STYLES['Ordinaire']
-}
 
 // ─── Accordion capacités ──────────────────────────────────────────────────────
 interface AbilityCard {
