@@ -43,7 +43,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 11,
     painResistance: 6,
-    defenseBonus: 9,
     shadow: {
       description: 'Cuivre intégralement oxydé',
       corruption: 10,
@@ -99,7 +98,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Éprouvante',
     endurance: 15,
     painResistance: 8,
-    defenseBonus: 0,
     shadow: {
       description: 'Noir brunâtre',
       corruption: 10,
@@ -160,7 +158,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Forte',
     endurance: 15,
     painResistance: 8,
-    defenseBonus: 1,
     shadow: {
       description: 'Masse pourpre noire dégoulinante',
       corruption: 10,
@@ -220,7 +217,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Colossale',
     endurance: 18,
     painResistance: 9,
-    defenseBonus: 3,
     shadow: {
       description: 'Noir profond',
       corruption: 10,
@@ -291,7 +287,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 10,
     painResistance: 3,
-    defenseBonus: -3,
     shadow: {
       description: 'Violet verdi',
       corruption: 1,
@@ -344,7 +339,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 10,
     painResistance: 5,
-    defenseBonus: -5,
     shadow: {
       description: 'Gris verdâtre lichen barbu',
       corruption: 2,
@@ -402,7 +396,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 10,
     painResistance: 5,
-    defenseBonus: -5,
     shadow: {
       description: 'Vert noirâtre goudron mare',
       corruption: 6,
@@ -454,7 +447,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Éprouvante',
     endurance: 11,
     painResistance: 6,
-    defenseBonus: -3,
     shadow: {
       description: 'Vert chatoyant',
       corruption: 0,
@@ -510,7 +502,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 10,
     painResistance: 4,
-    defenseBonus: -3,
     shadow: {
       description: 'Vert foncé',
       corruption: 4,
@@ -562,7 +553,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 15,
     painResistance: 8,
-    defenseBonus: 7,
     shadow: {
       description: 'Verte épines pin saison dernière',
       corruption: 0,
@@ -614,7 +604,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Éprouvante',
     endurance: 15,
     painResistance: 8,
-    defenseBonus: 1,
     shadow: {
       description: 'Rouge profond filaments rouille',
       corruption: 3,
@@ -671,7 +660,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Éprouvante',
     endurance: 10,
     painResistance: 5,
-    defenseBonus: -4,
     shadow: {
       description: 'Vert vif cime arbre chaleur',
       corruption: 0,
@@ -724,7 +712,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Forte',
     endurance: 13,
     painResistance: 7,
-    defenseBonus: 4,
     shadow: {
       description: 'Vert émeraude feuilles vieux chêne hypnotique',
       corruption: 0,
@@ -789,7 +776,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Faible',
     endurance: 10,
     painResistance: 3,
-    defenseBonus: -3,
     shadow: {
       description: 'Vert vif bouleau jeune',
       corruption: 0,
@@ -834,7 +820,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 10,
     painResistance: 4,
-    defenseBonus: -3,
     shadow: {
       description: 'Vert luxuriant',
       corruption: 0,
@@ -890,7 +875,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Éprouvante',
     endurance: 10,
     painResistance: 5,
-    defenseBonus: 0,
     shadow: {
       description: 'Vert profond',
       corruption: 0,
@@ -946,7 +930,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Forte',
     endurance: 10,
     painResistance: 4,
-    defenseBonus: 5,
     shadow: {
       description: 'Jaune rouge feuilles automne reflets marron rouille',
       corruption: 2,
@@ -1007,7 +990,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 15,
     painResistance: 8,
-    defenseBonus: 7,
     shadow: {
       description: 'Rouge vif sang vie',
       corruption: 0,
@@ -1062,7 +1044,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Éprouvante',
     endurance: 15,
     painResistance: 8,
-    defenseBonus: 2,
     shadow: {
       description: 'Rouge vif',
       corruption: 0,
@@ -1124,7 +1105,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Forte',
     endurance: 18,
     painResistance: 9,
-    defenseBonus: 4,
     shadow: {
       description: 'Rouge profond reflets rouille',
       corruption: 2,
@@ -1195,7 +1175,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Colossale',
     endurance: 18,
     painResistance: 9,
-    defenseBonus: 7,
     shadow: {
       description: 'Rouge bleuté sang peu oxygéné',
       corruption: 0,
@@ -1269,7 +1248,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Faible',
     endurance: 10,
     painResistance: 0,
-    defenseBonus: -3,
     shadow: {
       description: 'Gris cendre flocons noirs',
       corruption: 10,
@@ -1327,7 +1305,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 11,
     painResistance: 0,
-    defenseBonus: 0,
     shadow: {
       description: 'Gris jaunâtre peau morte tâches noires',
       corruption: 10,
@@ -1384,7 +1361,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Éprouvante',
     endurance: 10,
     painResistance: 0,
-    defenseBonus: -3,
     shadow: {
       description: 'Gris foncé nuages pluie nuit glaciale',
       corruption: 10,
@@ -1445,7 +1421,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Forte',
     endurance: 15,
     painResistance: 0,
-    defenseBonus: -2,
     shadow: {
       description: 'Couleur ciel nocturne sans nuages lueurs faibles',
       corruption: 10,
@@ -1512,7 +1487,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Faible',
     endurance: 10,
     painResistance: 5,
-    defenseBonus: 1,
     shadow: {
       description: 'Argent dentelé vert filaments noirs',
       corruption: 2,
@@ -1565,7 +1539,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 10,
     painResistance: 4,
-    defenseBonus: 5,
     shadow: {
       description: 'Marron reflets pourpres flaque huile',
       corruption: 4,
@@ -1623,7 +1596,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Faible',
     endurance: 11,
     painResistance: 6,
-    defenseBonus: 4,
     shadow: {
       description: 'Nuances vertes',
       corruption: 0,
@@ -1677,7 +1649,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 10,
     painResistance: 5,
-    defenseBonus: 0,
     shadow: {
       description: 'Verte taches cuivrées',
       corruption: 0,
@@ -1740,7 +1711,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 10,
     painResistance: 5,
-    defenseBonus: -4,
     shadow: {
       description: 'Argent étincelant',
       corruption: 0,
@@ -1799,7 +1769,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 11,
     painResistance: 6,
-    defenseBonus: 2,
     shadow: {
       description: 'Argentée taches noires',
       corruption: 3,
@@ -1859,7 +1828,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Faible',
     endurance: 15,
     painResistance: 8,
-    defenseBonus: 1,
     shadow: {
       description: 'Vert ou cuivre',
       corruption: 0,
@@ -1914,7 +1882,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 15,
     painResistance: 8,
-    defenseBonus: 1,
     shadow: {
       description: 'Rouge écarlate',
       corruption: 0,
@@ -1971,7 +1938,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Ordinaire',
     endurance: 11,
     painResistance: 6,
-    defenseBonus: -3,
     shadow: {
       description: 'Vert éclatant',
       corruption: 0,
@@ -2035,7 +2001,6 @@ export const MONSTERS: Record<string, Monster> = {
     resistance: 'Éprouvante',
     endurance: 15,
     painResistance: 8,
-    defenseBonus: -3,
     shadow: {
       description: 'Vert profond',
       corruption: 0,

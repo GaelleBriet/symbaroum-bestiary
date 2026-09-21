@@ -40,7 +40,6 @@ const form = reactive({
   resistance:    props.initialData?.resistance ?? ('Ordinaire' as Monster['resistance']),
   endurance:     props.initialData?.endurance ?? 10,
   painResistance: props.initialData?.painResistance ?? 5,
-  defenseBonus:  props.initialData?.defenseBonus ?? 0,
   baseStats: { ...(props.initialData?.baseStats ?? DEFAULT_STATS) },
   statModifiers: { ...(props.initialData?.statModifiers ?? ZERO_MODS) },
   shadow: {
@@ -253,7 +252,6 @@ function submit() {
     resistance:    form.resistance,
     endurance:     form.endurance,
     painResistance: form.painResistance,
-    defenseBonus:  form.defenseBonus,
     shadow:        { ...form.shadow },
     traits:        form.traits.map(t => ({ ...t })),
     talents:       form.talents.map(t => ({ ...t })),
