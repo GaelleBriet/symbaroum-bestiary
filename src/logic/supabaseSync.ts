@@ -29,7 +29,7 @@ export async function upsertMonsterRemote(monster: Monster, userId: string): Pro
   if (error) throw error
 }
 
-export async function deleteMonsterRemote(id: string): Promise<void> {
-  const { error } = await supabase.from('monsters').delete().eq('id', id)
+export async function deleteMonsterRemote(id: string, userId: string): Promise<void> {
+  const { error } = await supabase.from('monsters').delete().eq('id', id).eq('user_id', userId)
   if (error) throw error
 }

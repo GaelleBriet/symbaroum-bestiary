@@ -157,7 +157,10 @@ export const useMonsterStore = defineStore('monsters', () => {
     }
 
     if (monster?.isCustom) {
-      deleteMonsterRemote(id).catch(console.error)
+      const authStore = useAuthStore()
+      if (authStore.userId) {
+        deleteMonsterRemote(id, authStore.userId).catch(console.error)
+      }
     }
   }
 
