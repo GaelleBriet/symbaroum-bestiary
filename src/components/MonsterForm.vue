@@ -7,6 +7,7 @@ import { TALENTS } from '@/data/talents'
 import { WEAPONS, ARMORS, findWeapon, findArmor } from '@/data/equipment'
 import { STAT_LABELS } from '@/data/stats'
 import { RESISTANCE_OPTIONS } from '@/data/resistance'
+import { xpForLevel } from '@/logic/mechanics'
 
 const props = defineProps<{
   mode: 'create' | 'edit'
@@ -136,13 +137,6 @@ function removeTalent(id: string) {
 }
 
 // ─── Compteur XP ─────────────────────────────────────────────────────────────
-// Chaque rang s'achète indépendamment : niveau II = rang I (10) + rang II (30) = 40 XP
-const XP_PER_RANK: Record<1|2|3, number> = { 1: 10, 2: 30, 3: 60 }
-function xpForLevel(level: 1|2|3): number {
-  let total = 0
-  for (let i = 1 as 1|2|3; i <= level; i++) total += XP_PER_RANK[i as 1|2|3]
-  return total
-}
 const totalXP = computed(() =>
   [...form.traits, ...form.talents].reduce((sum, sel) => sum + xpForLevel(sel.level), 0)
 )

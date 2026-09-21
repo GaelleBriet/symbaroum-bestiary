@@ -2,16 +2,13 @@
 import { computed, reactive } from 'vue'
 import { useMonsterStore } from '@/stores/monsterStore'
 import AuthStatusBar from '@/components/AuthStatusBar.vue'
-import { calculateEffectiveStats, levelLabel } from '@/logic/mechanics'
+import { calculateEffectiveStats, levelLabel, xpForLevel } from '@/logic/mechanics'
 import { findWeapon, findArmor } from '@/data/equipment'
-import { TALENTS } from '@/data/talents'
-import { TRAITS } from '@/data/traits'
-import { MONSTROUS_TRAITS } from '@/data/monstrousTraits'
 import {  calculateArmorFormula, diceAverage, calculateTotalDamage, resolveWeaponSides } from '@/logic/damageCalculator'
 import { STAT_LABELS_FR } from '@/data/stats'
 import { resistanceStyle } from '@/data/resistance'
 import type { Monster } from '@/types/monster'
-import type { TalentOrTrait, ActivationType } from '@/types/rules'
+import type { ActivationType } from '@/types/rules'
 
 const store = useMonsterStore()
 
@@ -89,12 +86,6 @@ const absorptionTotal = computed(() => {
 })
 
 // ─── XP total ─────────────────────────────────────────────────────────────────
-const XP_PER_RANK: Record<1|2|3, number> = { 1: 10, 2: 30, 3: 60 }
-function xpForLevel(level: 1|2|3): number {
-  let total = 0
-  for (let i = 1; i <= level; i++) total += XP_PER_RANK[i as 1|2|3]
-  return total
-}
 const totalXP = computed(() =>
   [...monster.value.talents, ...monster.value.traits].reduce((s, r) => s + xpForLevel(r.level), 0)
 )
@@ -136,45 +127,21 @@ interface AbilityCard {
   armorBonus?: number
 }
 
-function resolveAbility(id: string): TalentOrTrait | null {
-  return (
-    Object.values(TALENTS).find(a => a.id === id) ??
-    Object.values(TRAITS).find(a => a.id === id) ??
-    Object.values(MONSTROUS_TRAITS).find(a => a.id === id) ??
-    null
-  )
-}
-
-const abilityCards = computed((): AbilityCard[] => {
-  const m = monster.value
-  const cards: AbilityCard[] = []
-  for (const ref of [...m.traits, ...m.talents]) {
-    const ability = resolveAbility(ref.id)
-    if (!ability) continue
-
-    const replacedRanks = new Set<number>()
-    for (let i = 1; i <= ref.level; i++) {
-      const eff = ability.effects[i as 1|2|3]
-      if (eff?.isReplacementFor !== undefined) replacedRanks.add(eff.isReplacementFor)
-    }
-    for (let i = 1; i <= ref.level; i++) {
-      if (replacedRanks.has(i)) continue
-      const eff = ability.effects[i as 1|2|3]
-      cards.push({
-        key: `${ref.id}-${i}`,
-        abilityName: ability.name,
-        rank: i as 1|2|3,
-        activation: eff.activation,
-        customText: eff.customText,
-        defenseModifier: eff.defenseModifier,
-        damageBonus: eff.damageBonus,
-        damageDice: eff.damageDice,
-        armorBonus: eff.armorBonus,
-      })
-    }
-  }
-  return cards
-})
+// Capacités déjà calculées par calculateEffectiveStats (résolution + règle "rang le plus
+// élevé remplace les précédents") : on ne fait ici que projeter vers la forme locale AbilityCard.
+const abilityCards = computed((): AbilityCard[] =>
+  effective.value.allAbilities.map((a) => ({
+    key: a.key,
+    abilityName: a.abilityName,
+    rank: a.rank as 1 | 2 | 3,
+    activation: a.activation,
+    customText: a.customText,
+    defenseModifier: a.defenseModifier,
+    damageBonus: a.damageBonus,
+    damageDice: a.damageDice,
+    armorBonus: a.armorBonus,
+  }))
+)
 
 const groupedCards = computed(() => ({
   free:     abilityCards.value.filter(c => c.activation === 'free'),
