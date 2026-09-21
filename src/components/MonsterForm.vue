@@ -2,6 +2,7 @@
 import { reactive, computed } from 'vue'
 import type { Monster, MonsterStats, MonsterStatModifiers, SelectedReference } from '@/types/monster'
 import { MONSTROUS_TRAITS } from '@/data/monstrousTraits'
+import { TRAITS } from '@/data/traits'
 import { TALENTS } from '@/data/talents'
 import { WEAPONS, ARMORS } from '@/data/equipment'
 
@@ -95,11 +96,17 @@ function validate(): boolean {
 const pendingTrait = reactive({ id: '', level: 1 as 1|2|3 })
 
 const traitOptions = computed(() =>
-  Object.values(MONSTROUS_TRAITS).sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+  [...Object.values(MONSTROUS_TRAITS), ...Object.values(TRAITS)].sort((a, b) =>
+    a.name.localeCompare(b.name, 'fr')
+  )
 )
 
 function traitName(id: string): string {
-  return MONSTROUS_TRAITS[Object.keys(MONSTROUS_TRAITS).find(k => MONSTROUS_TRAITS[k].id === id) ?? '']?.name ?? id
+  return (
+    Object.values(MONSTROUS_TRAITS).find(t => t.id === id)?.name ??
+    Object.values(TRAITS).find(t => t.id === id)?.name ??
+    id
+  )
 }
 
 function addTrait() {
