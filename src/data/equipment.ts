@@ -444,6 +444,22 @@ export function getArmor(id: string): Armor | undefined {
 }
 
 /**
+ * Retrouve une arme du catalogue à partir du champ `id` (et non de la clé de
+ * l'objet WEAPONS, qui peut différer, ex: `batonDeCombat` vs 'baton-de-combat').
+ */
+export function findWeapon(id: string): Weapon | undefined {
+  return Object.values(WEAPONS).find((w) => w.id === id);
+}
+
+/**
+ * Retrouve une armure du catalogue à partir du champ `id` (même remarque que
+ * findWeapon : la clé de l'objet ARMORS peut différer de l'id).
+ */
+export function findArmor(id: string): Armor | undefined {
+  return Object.values(ARMORS).find((a) => a.id === id);
+}
+
+/**
  * Récupère toutes les armes avec un dé de dégâts spécifique
  */
 export function getWeaponsByDamage(damageSides: number): Weapon[] {

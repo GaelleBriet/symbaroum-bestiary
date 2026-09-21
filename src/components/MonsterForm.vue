@@ -4,7 +4,9 @@ import type { Monster, MonsterStats, MonsterStatModifiers, SelectedReference } f
 import { MONSTROUS_TRAITS } from '@/data/monstrousTraits'
 import { TRAITS } from '@/data/traits'
 import { TALENTS } from '@/data/talents'
-import { WEAPONS, ARMORS } from '@/data/equipment'
+import { WEAPONS, ARMORS, findWeapon, findArmor } from '@/data/equipment'
+import { STAT_LABELS } from '@/data/stats'
+import { RESISTANCE_OPTIONS } from '@/data/resistance'
 
 const props = defineProps<{
   mode: 'create' | 'edit'
@@ -26,21 +28,6 @@ const DEFAULT_STATS: MonsterStats = {
   accurate: 10, cunning: 10, discreet: 10, persuasive: 10,
   quick: 10, resolute: 10, strong: 10, vigilant: 10,
 }
-
-const STAT_LABELS: [keyof MonsterStats, string][] = [
-  ['accurate',   'Précision'],
-  ['cunning',    'Astuce'],
-  ['discreet',   'Discrétion'],
-  ['persuasive', 'Persuasion'],
-  ['quick',      'Agilité'],
-  ['resolute',   'Volonté'],
-  ['strong',     'Force'],
-  ['vigilant',   'Vigilance'],
-]
-
-const RESISTANCE_OPTIONS: Monster['resistance'][] = [
-  'Faible', 'Ordinaire', 'Éprouvante', 'Forte', 'Colossale',
-]
 
 const LEVEL_LABELS: Record<1|2|3, string> = { 1: 'I', 2: 'II', 3: 'III' }
 
@@ -187,7 +174,7 @@ const pendingWeaponId = reactive({ id: '' })
 
 const selectedWeaponPreview = computed(() =>
   pendingWeaponId.id
-    ? Object.values(WEAPONS).find(w => w.id === pendingWeaponId.id) ?? null
+    ? findWeapon(pendingWeaponId.id) ?? null
     : null
 )
 
@@ -197,12 +184,12 @@ function weaponDamageLabel(sides: number): string {
 
 // Retrouve les infos catalogue d'une arme déjà ajoutée (pour afficher les qualités)
 function catalogWeapon(id: string) {
-  return Object.values(WEAPONS).find(w => w.id === id) ?? null
+  return findWeapon(id) ?? null
 }
 
 function addWeapon() {
   if (!pendingWeaponId.id) return
-  const w = Object.values(WEAPONS).find(w => w.id === pendingWeaponId.id)
+  const w = findWeapon(pendingWeaponId.id)
   if (!w) return
   // Remplace si déjà présent
   const idx = form.equipment.weapons.findIndex(ew => ew.id === w.id)
@@ -229,7 +216,7 @@ const pendingArmorId = reactive({ id: '' })
 
 const selectedArmorPreview = computed(() =>
   pendingArmorId.id
-    ? Object.values(ARMORS).find(a => a.id === pendingArmorId.id) ?? null
+    ? findArmor(pendingArmorId.id) ?? null
     : null
 )
 
@@ -238,12 +225,12 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 function catalogArmor(id: string) {
-  return Object.values(ARMORS).find(a => a.id === id) ?? null
+  return findArmor(id) ?? null
 }
 
 function addArmor() {
   if (!pendingArmorId.id) return
-  const a = Object.values(ARMORS).find(a => a.id === pendingArmorId.id)
+  const a = findArmor(pendingArmorId.id)
   if (!a) return
   form.equipment.armor = {
     id: a.id,

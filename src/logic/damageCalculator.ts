@@ -1,7 +1,7 @@
 // src/logic/damageCalculator.ts
 
 import { getQuality } from '@/data/qualities'
-import { WEAPONS } from '@/data/equipment'
+import { findWeapon } from '@/data/equipment'
 import type { Weapon, Armor } from '@/types/rules'
 import type { Monster, MonsterWeapon } from '@/types/monster'
 import type { EffectiveStats } from '@/logic/mechanics'
@@ -17,7 +17,7 @@ export function diceAverage(sides: number): number {
 // `damage` stocké sur les armes non cataloguées (griffes, morsure, défenses...) n'est PAS
 // un nombre de faces de dé et ne doit jamais être utilisé comme tel.
 export function resolveWeaponSides(w: MonsterWeapon, naturalWeaponSides: number): number {
-  const catalog = Object.values(WEAPONS).find(c => c.id === w.id)
+  const catalog = findWeapon(w.id)
   return catalog ? catalog.damage.sides : naturalWeaponSides
 }
 
@@ -86,7 +86,7 @@ export function calculateTotalDamage(
 
   // 1. Dés de l'arme équipée + bonus qualités
   for (const w of monster.equipment?.weapons ?? []) {
-    const catalog = Object.values(WEAPONS).find(c => c.id === w.id)
+    const catalog = findWeapon(w.id)
     const sides = resolveWeaponSides(w, effectiveStats.naturalWeaponSides)
     const weaponName = catalog?.name ?? w.name ?? w.id
     if (sides > 0) {
