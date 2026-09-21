@@ -88,6 +88,7 @@ export const TRAITS: Record<string, TalentOrTrait> = {
       2: {
         activation: 'special',
         defenseModifier: -3,
+        isReplacementFor: 1,
         customText:
           'Spéciale: Le personnage mesure plus de\n' +
             '2,5 mètres de haut, pèse environ 230 kg,\n' +
@@ -108,6 +109,7 @@ export const TRAITS: Record<string, TalentOrTrait> = {
       3: {
         activation: 'special',
         defenseModifier: -4,
+        isReplacementFor: 2,
         customText:
           'Spéciale: Le personnage mesure presque 3\n' +
             'mètres de haut, pèse environ une demi-tonne\n' +

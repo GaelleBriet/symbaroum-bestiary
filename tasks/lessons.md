@@ -43,6 +43,12 @@
   nombre de faces de dé — ne jamais le traiter comme tel (`1d${w.damage}`). Utiliser
   `naturalWeaponSides` calculé dans `mechanics.ts` (0→1d4, 1→1d6, 2→1d8, 3→1d10 selon le rang
   du trait Arme Naturelle du monstre), via `resolveWeaponSides()` dans `damageCalculator.ts`.
+- Erratum (21 sept. 2026) : le chiffre "Dégâts 11,5" du Scrofar Corrompu documenté plus bas
+  (section CORRECTIFS de `tasks/todo.md`, Bug 5) était basé sur un calcul manuel utilisant
+  1d8 (rang II), alors que la fiche officielle du Scrofar Corrompu indique bien Arme Naturelle
+  **(III)** — donc 1d10, comme le calcule déjà correctement le code. Le vrai total est
+  **12,5** (1d10 Défenses [5,5] + 1d8 Robuste III [4,5] + 1d4 Poigne de fer II [2,5]). C'est la
+  doc qui était fausse, pas le code ni la donnée `level: 3`.
 
 ### Calcul de l'Endurance
 - Endurance stockée directement dans Monster.endurance
