@@ -5,6 +5,7 @@ import { MONSTERS } from '@/data/monsters'
 import { RESISTANCE_OPTIONS, resistanceStyle } from '@/data/resistance'
 import type { Monster } from '@/types/monster'
 import AuthStatusBar from '@/components/AuthStatusBar.vue'
+import { exportMonstersPdf } from '@/logic/pdfExport'
 
 const store = useMonsterStore()
 
@@ -70,6 +71,52 @@ function enduranceBarColor(ratio: number): string {
   if (ratio > 0.3) return '#c87d2a'
   return '#c84040'
 }
+
+// Sélection multiple pour l'export PDF groupé — clé par id de monstre (pas par index de la
+// liste filtrée) pour survivre à un changement de recherche/filtre : la sélection persiste
+// pendant qu'on affine la recherche, se rebase juste sur les monstres toujours existants.
+//
+// Les cases à cocher ne sont pas affichées en permanence sur chaque carte (trop dense sur
+// tablette, risque de mauvais tap pour une action occasionnelle de préparation de session) :
+// un bouton "Sélectionner" bascule un mode dédié qui les fait apparaître, à la manière de
+// Gmail/Google Photos/Files — la liste reste sobre par défaut.
+const selectionMode = ref(false)
+const selectedIds = ref(new Set<string>())
+const selectedCount = computed(() => selectedIds.value.size)
+const cardGridColumns = computed(() => selectionMode.value ? 'auto 1fr auto' : '1fr auto')
+
+function toggleSelectionMode() {
+  selectionMode.value = !selectionMode.value
+  // Quitter le mode sélection efface la sélection en cours (comme entrer dans le mode part
+  // toujours d'une sélection vide) — évite une sélection "fantôme" qui resurgirait au
+  // prochain passage en mode sélection.
+  if (!selectionMode.value) selectedIds.value = new Set()
+}
+
+function toggleSelected(e: Event, id: string) {
+  e.stopPropagation()
+  const next = new Set(selectedIds.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  selectedIds.value = next
+}
+
+function clearSelection() {
+  selectedIds.value = new Set()
+}
+
+const exportingSelection = ref(false)
+async function exportSelectionPdf() {
+  if (exportingSelection.value || selectedCount.value === 0) return
+  const monsters = store.monsters.filter(m => selectedIds.value.has(m.id))
+  if (monsters.length === 0) return
+  exportingSelection.value = true
+  try {
+    await exportMonstersPdf(monsters)
+  } finally {
+    exportingSelection.value = false
+  }
+}
 </script>
 
 <template>
@@ -132,6 +179,30 @@ function enduranceBarColor(ratio: number): string {
         >Monstre ajouté !</span>
       </div>
 
+      <!-- Ligne 3 : bascule du mode sélection → export PDF groupé -->
+      <div class="flex items-center gap-2.5">
+        <button
+          @click="toggleSelectionMode"
+          class="shrink-0 text-sm px-3 py-1.5 rounded border transition-colors"
+          :style="selectionMode
+            ? 'border-color:#8b5520; color:#c87d2a; background:#1f1508;'
+            : 'border-color:#332d21; color:#7a6e52; background:transparent;'"
+        >{{ selectionMode ? 'Annuler la sélection' : 'Sélectionner' }}</button>
+
+        <template v-if="selectionMode && selectedCount > 0">
+          <button
+            @click="exportSelectionPdf"
+            :disabled="exportingSelection"
+            class="shrink-0 px-4 py-2 rounded text-sm font-semibold border transition-colors disabled:opacity-50 disabled:cursor-wait"
+            style="border-color:#8b5520; color:#c87d2a; background:#1f1508;"
+          >{{ exportingSelection ? 'Génération…' : `Exporter la sélection en PDF (${selectedCount})` }}</button>
+          <button
+            @click="clearSelection"
+            class="shrink-0 text-xs px-2 py-1 rounded text-sym-text3 hover:text-sym-text2 transition-colors"
+          >Tout désélectionner ✕</button>
+        </template>
+      </div>
+
     </div>
 
     <!-- List -->
@@ -177,10 +248,20 @@ function enduranceBarColor(ratio: number): string {
         :key="monster.id"
         @click="store.openDetail(monster.id)"
         class="grid items-center rounded-md border cursor-pointer transition-colors"
-        style="grid-template-columns: 1fr auto; background:#131109; border-color:#332d21; padding: 14px 18px;"
+        :style="`grid-template-columns: ${cardGridColumns}; background:#131109; border-color:#332d21; padding: 14px 18px;`"
         @mouseenter="(e) => { (e.currentTarget as HTMLElement).style.background='#1a1712'; (e.currentTarget as HTMLElement).style.borderColor='#3d3628' }"
         @mouseleave="(e) => { (e.currentTarget as HTMLElement).style.background='#131109'; (e.currentTarget as HTMLElement).style.borderColor='#332d21' }"
       >
+        <!-- Case à cocher (mode sélection uniquement — export PDF groupé) -->
+        <input
+          v-if="selectionMode"
+          type="checkbox"
+          :checked="selectedIds.has(monster.id)"
+          @click="toggleSelected($event, monster.id)"
+          class="shrink-0 mr-3 w-4 h-4 cursor-pointer accent-sym-amber"
+          aria-label="Sélectionner ce monstre pour l'export PDF groupé"
+        />
+
         <!-- Gauche -->
         <div class="min-w-0 pr-4">
           <div class="flex items-center gap-2 mb-1">
