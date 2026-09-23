@@ -692,7 +692,42 @@ async function registerFonts(doc: PdfDoc): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Point d'entrée
+// Rendu d'une fiche complète (privé) — réutilisé par l'export simple ET l'export
+// multiple : dessine l'intégralité du contenu d'UN monstre (en-tête, attributs,
+// combat, équipement, ombre/notes, capacités) à partir de la position courante du
+// curseur, en repeignant d'abord le fond de la page active. Ne gère ni la création
+// du document, ni l'enregistrement des polices, ni les pieds de page, ni la
+// sauvegarde — ça reste la responsabilité des points d'entrée exportés ci-dessous.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function drawMonsterSheet(ctx: RenderCtx, pageState: { page: number }, monster: Monster): void {
+  const effective = calculateEffectiveStats(monster)
+  const totalDamage = calculateTotalDamage(monster, effective)
+  const totalXP = [...monster.talents, ...monster.traits].reduce((sum, r) => sum + xpForLevel(r.level), 0)
+
+  paintPageBackground(ctx.doc)
+  ctx.cursor.y = MARGIN + 4
+
+  drawHeader(ctx, monster, totalXP)
+
+  const colGap = 6
+  const leftW = 62
+  const rightW = CONTENT_W - leftW - colGap
+  const blockStartY = ctx.cursor.y
+
+  const leftH = drawAttributes(ctx, monster, effective, MARGIN, leftW)
+  ctx.cursor.y = blockStartY
+  const rightH = drawCombat(ctx, monster, effective, totalDamage, MARGIN + leftW + colGap, rightW)
+
+  ctx.cursor.y = blockStartY + Math.max(leftH, rightH)
+
+  drawEquipment(ctx, pageState, monster, effective)
+  drawShadowAndNotes(ctx, pageState, monster)
+  drawAbilities(ctx, pageState, effective)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Points d'entrée
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -711,32 +746,53 @@ export async function exportMonsterPdf(monster: Monster): Promise<void> {
     creator: 'Bestiaire Symbaroum',
   })
 
-  const effective = calculateEffectiveStats(monster)
-  const totalDamage = calculateTotalDamage(monster, effective)
-  const totalXP = [...monster.talents, ...monster.traits].reduce((sum, r) => sum + xpForLevel(r.level), 0)
-
   const pageState = { page: 1 }
-  paintPageBackground(doc)
   const ctx: RenderCtx = { doc, cursor: { y: MARGIN + 4 } }
 
-  drawHeader(ctx, monster, totalXP)
-
-  const colGap = 6
-  const leftW = 62
-  const rightW = CONTENT_W - leftW - colGap
-  const blockStartY = ctx.cursor.y
-
-  const leftH = drawAttributes(ctx, monster, effective, MARGIN, leftW)
-  ctx.cursor.y = blockStartY
-  const rightH = drawCombat(ctx, monster, effective, totalDamage, MARGIN + leftW + colGap, rightW)
-
-  ctx.cursor.y = blockStartY + Math.max(leftH, rightH)
-
-  drawEquipment(ctx, pageState, monster, effective)
-  drawShadowAndNotes(ctx, pageState, monster)
-  drawAbilities(ctx, pageState, effective)
+  drawMonsterSheet(ctx, pageState, monster)
 
   drawFooters(doc, pageState.page)
 
   await doc.save(`${slugify(monster.name)}.pdf`, { returnPromise: true })
+}
+
+/**
+ * Génère et télécharge UN SEUL PDF combiné regroupant la fiche complète de chaque monstre
+ * fourni, chacune démarrant sur une nouvelle page (aucun mélange de contenu entre deux
+ * monstres sur une même page). Réutilise exactement le même rendu par monstre que
+ * `exportMonsterPdf` (voir `drawMonsterSheet`) — seule la boucle de pagination change.
+ */
+export async function exportMonstersPdf(monsters: Monster[]): Promise<void> {
+  if (monsters.length === 0) return
+
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  await registerFonts(doc)
+
+  doc.setProperties({
+    title: `Bestiaire Symbaroum — ${monsters.length} monstres`,
+    subject: 'Fiches de monstres — Bestiaire Symbaroum',
+    creator: 'Bestiaire Symbaroum',
+  })
+
+  const pageState = { page: 1 }
+  const ctx: RenderCtx = { doc, cursor: { y: MARGIN + 4 } }
+
+  monsters.forEach((monster, index) => {
+    // La toute première page existe déjà (créée par `new jsPDF()`) : on ne l'ajoute
+    // qu'à partir du 2e monstre, pour que chaque fiche démarre proprement sur sa
+    // propre page sans page blanche en tête de document.
+    if (index > 0) {
+      doc.addPage()
+      pageState.page += 1
+    }
+    drawMonsterSheet(ctx, pageState, monster)
+  })
+
+  drawFooters(doc, pageState.page)
+
+  const filename = monsters.length === 1
+    ? `${slugify(monsters[0].name)}.pdf`
+    : `bestiaire-symbaroum-${monsters.length}-monstres.pdf`
+  await doc.save(filename, { returnPromise: true })
 }
