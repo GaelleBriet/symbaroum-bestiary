@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useMonsterStore } from '@/stores/monsterStore'
 import AuthStatusBar from '@/components/AuthStatusBar.vue'
 import { calculateEffectiveStats, levelLabel, xpForLevel } from '@/logic/mechanics'
@@ -7,6 +7,7 @@ import { findWeapon, findArmor } from '@/data/equipment'
 import {  calculateArmorFormula, diceAverage, calculateTotalDamage, resolveWeaponSides } from '@/logic/damageCalculator'
 import { STAT_LABELS_FR } from '@/data/stats'
 import { resistanceStyle } from '@/data/resistance'
+import { exportMonsterPdf } from '@/logic/pdfExport'
 import type { Monster } from '@/types/monster'
 import type { ActivationType } from '@/types/rules'
 
@@ -162,6 +163,21 @@ function toggleItem(key: string) {
   if (openItems.has(key)) openItems.delete(key)
   else openItems.add(key)
 }
+
+// ─── Export PDF ───────────────────────────────────────────────────────────────
+// Fonctionne à l'identique pour un monstre officiel (isCustom: false) et un monstre
+// personnalisé (isCustom: true) : les deux sont un simple `Monster`, aucun cas particulier
+// ici — voir src/logic/pdfExport.ts.
+const exportingPdf = ref(false)
+async function handleExportPdf() {
+  if (exportingPdf.value) return
+  exportingPdf.value = true
+  try {
+    await exportMonsterPdf(monster.value)
+  } finally {
+    exportingPdf.value = false
+  }
+}
 </script>
 
 <template>
@@ -232,6 +248,13 @@ function toggleItem(key: string) {
           />
         </div>
       </div>
+
+      <button
+        @click="handleExportPdf"
+        :disabled="exportingPdf"
+        class="shrink-0 text-sm px-3 py-1.5 rounded border text-sym-text3 hover:text-sym-text2 transition-colors disabled:opacity-50 disabled:cursor-wait"
+        style="border-color:#332d21;"
+      >{{ exportingPdf ? 'Génération…' : 'Exporter en PDF' }}</button>
 
       <button
         @click="store.openEditForm(monster.id)"
