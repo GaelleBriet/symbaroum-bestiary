@@ -2,9 +2,11 @@
 import { computed, reactive, ref } from 'vue'
 import { useMonsterStore } from '@/stores/monsterStore'
 import AuthStatusBar from '@/components/AuthStatusBar.vue'
+import EditableCombatValue from '@/components/EditableCombatValue.vue'
 import { calculateEffectiveStats, levelLabel, xpForLevel } from '@/logic/mechanics'
 import { findWeapon, findArmor } from '@/data/equipment'
-import {  calculateArmorFormula, diceAverage, calculateTotalDamage, resolveWeaponSides } from '@/logic/damageCalculator'
+import { calculateArmorFormula, calculateAbsorption, calculateTotalDamage, resolveWeaponSides } from '@/logic/damageCalculator'
+import { resolveCombatValue, type ManualCombatField } from '@/logic/manualCombatValues'
 import { STAT_LABELS_FR } from '@/data/stats'
 import { resistanceStyle } from '@/data/resistance'
 import { exportMonsterPdf } from '@/logic/pdfExport'
@@ -59,6 +61,7 @@ function weaponDiceLabel(w: typeof catalogWeapons.value[0]): string {
 
 // ─── Combat — dégâts totaux ───────────────────────────────────────────────────
 const totalDamage = computed(() => calculateTotalDamage(monster.value, effective.value))
+const damageValue = computed(() => resolveCombatValue(totalDamage.value.average, monster.value.manualDamage))
 
 // ─── Combat — ATT CAC / ATT DIST ─────────────────────────────────────────────
 const meleePlacements = computed(() =>
@@ -75,16 +78,15 @@ const attCacLabel = computed(() => {
 const attDist = computed(() => effective.value.stats.accurate)
 
 // ─── Combat — ABSORPTION ─────────────────────────────────────────────────────
-const armorAvg = computed(() => {
-  if (!catalogArmor.value) return 0
-  return diceAverage(catalogArmor.value.protection.sides)
-})
-const skinProtection = computed(() => effective.value.skinProtection)
-const naturalArmor = computed(() => effective.value.armorBonusFromTraits)
-const absorptionTotal = computed(() => {
-  const skin = skinProtection.value?.average ?? 0
-  return Math.round((armorAvg.value + skin + naturalArmor.value) * 10) / 10
-})
+const absorption = computed(() => calculateAbsorption(monster.value, effective.value))
+const armorAvg = computed(() => absorption.value.armorAverage)
+const skinProtection = computed(() => absorption.value.skin)
+const naturalArmor = computed(() => absorption.value.naturalArmor)
+const absorptionValue = computed(() => resolveCombatValue(absorption.value.total, monster.value.manualAbsorption))
+
+function saveManualValue(field: ManualCombatField, value: number | null) {
+  store.setManualCombatValue(monster.value.id, field, value)
+}
 
 // ─── XP total ─────────────────────────────────────────────────────────────────
 const totalXP = computed(() =>
@@ -390,14 +392,22 @@ async function handleExportPdf() {
         <div class="grid grid-cols-2 gap-2.5">
           <!-- DÉGÂTS -->
           <div class="rounded-md border p-3" style="background:#1a1712; border-color:#332d21;">
-            <p class="text-[9px] uppercase tracking-wide text-sym-text3 mb-1">Dégâts</p>
-            <p class="font-cinzel font-bold text-2xl" style="color:#c87d2a;">{{ totalDamage.average }}</p>
+            <EditableCombatValue
+              label="Dégâts"
+              :combat-value="damageValue"
+              color="#c87d2a"
+              @save="saveManualValue('manualDamage', $event)"
+            />
             <p class="text-[10px] text-sym-text3 mt-0.5 break-all">{{ totalDamage.formula }}</p>
           </div>
           <!-- ABSORPTION -->
           <div class="rounded-md border p-3" style="background:#1a1712; border-color:#332d21;">
-            <p class="text-[9px] uppercase tracking-wide text-sym-text3 mb-1">Absorption</p>
-            <p class="font-cinzel font-bold text-2xl" style="color:#7ab5e8;">{{ absorptionTotal }}</p>
+            <EditableCombatValue
+              label="Absorption"
+              :combat-value="absorptionValue"
+              color="#7ab5e8"
+              @save="saveManualValue('manualAbsorption', $event)"
+            />
             <div class="flex gap-3 mt-1">
               <div>
                 <p class="text-[9px] uppercase text-sym-text3">Armure</p>

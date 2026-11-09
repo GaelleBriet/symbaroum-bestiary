@@ -121,3 +121,22 @@ Raison : le MJ veut partir d'une créature existante pour en faire une variante 
 formulaire pré-rempli sur la copie → copie renommée + Endurance 15 → 22 → après rechargement,
 l'original est inchangé (15, id distinct), la copie conserve ses modifications.
 **Non vérifié** : synchro Supabase de la copie avec le compte réel (pas d'identifiants ici).
+
+### VALEURS MANUELLES DÉGÂTS / ABSORPTION — ✅ CODE TERMINÉ (9 nov. 2026)
+
+Raison : le calcul automatique a encore des bugs et manquements ; le MJ doit pouvoir corriger la
+valeur affichée sur la fiche sans attendre un correctif.
+
+- [x] `Monster.manualDamage` / `manualAbsorption` (optionnels) — remplacent le calcul tant qu'ils existent
+- [x] `src/logic/manualCombatValues.ts` — `resolveCombatValue()` (manuel ou calcul) + `parseManualValue()` (virgule acceptée, ≥ 0, arrondi 0,1)
+- [x] `calculateAbsorption()` dans `damageCalculator.ts` — calcul unique, auparavant dupliqué entre la fiche et le PDF
+- [x] `EditableCombatValue.vue` — toucher la valeur → saisie + « Enregistrer » / « Annuler » ; « Rétablir le calcul » quand elle est manuelle
+- [x] Export PDF : affiche la valeur manuelle avec la mention « Saisie manuelle (calcul X) »
+
+Choix : sauvegarde par bouton plutôt qu'automatique — un mauvais tap sur tablette en pleine partie ne
+doit jamais écraser une valeur. Modifier le monstre par le formulaire conserve les valeurs manuelles.
+
+**Vérifié** : `vue-tsc` + build OK ; testé dans Chromium en démo sur le Scrofar Corrompu : saisie
+invalide refusée, Dégâts 12,5 → 9,5 et Absorption 8,5 → 6 conservés après rechargement, « Annuler »
+ne change rien, PDF exporté avec les valeurs manuelles, « Rétablir le calcul » revient à 12,5.
+**Non vérifié** : synchro Supabase avec le compte réel (pas d'identifiants ici).

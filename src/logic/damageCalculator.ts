@@ -1,7 +1,7 @@
 // src/logic/damageCalculator.ts
 
 import { getQuality } from '@/data/qualities'
-import { findWeapon } from '@/data/equipment'
+import { findWeapon, findArmor } from '@/data/equipment'
 import type { Weapon, Armor } from '@/types/rules'
 import type { Monster, MonsterWeapon } from '@/types/monster'
 import type { EffectiveStats } from '@/logic/mechanics'
@@ -128,5 +128,26 @@ export function calculateTotalDamage(
   return {
     formula: formulaParts.join(' + '),
     average: Math.round(sum * 10) / 10,
+  }
+}
+
+export interface AbsorptionBreakdown {
+  total: number
+  armorAverage: number
+  naturalArmor: number
+  skin: EffectiveStats['skinProtection']
+}
+
+// Absorption = moyenne du dé d'armure + armure naturelle des traits + protection de la peau.
+export function calculateAbsorption(monster: Monster, effectiveStats: EffectiveStats): AbsorptionBreakdown {
+  const armor = monster.equipment?.armor ? findArmor(monster.equipment.armor.id) : undefined
+  const armorAverage = armor ? diceAverage(armor.protection.sides) : 0
+  const naturalArmor = effectiveStats.armorBonusFromTraits
+  const skin = effectiveStats.skinProtection
+  return {
+    total: Math.round((armorAverage + (skin?.average ?? 0) + naturalArmor) * 10) / 10,
+    armorAverage,
+    naturalArmor,
+    skin,
   }
 }

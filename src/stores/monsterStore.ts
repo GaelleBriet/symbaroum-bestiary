@@ -11,6 +11,7 @@ import {
   deleteMonster as dbDelete,
 } from '@/logic/database'
 import { buildMonsterCopy } from '@/logic/monsterCopy'
+import type { ManualCombatField } from '@/logic/manualCombatValues'
 import {
   fetchCustomMonsters,
   upsertMonsterRemote,
@@ -148,6 +149,11 @@ export const useMonsterStore = defineStore('monsters', () => {
     }
   }
 
+  // value null : la valeur manuelle est retirée et le calcul automatique reprend la main.
+  async function setManualCombatValue(id: string, field: ManualCombatField, value: number | null): Promise<void> {
+    await updateMonster(id, { [field]: value ?? undefined })
+  }
+
   async function duplicateMonster(id: string): Promise<Monster | null> {
     const original = monsters.value.find((m) => m.id === id)
     if (!original) return null
@@ -219,6 +225,7 @@ export const useMonsterStore = defineStore('monsters', () => {
     addMonster,
     updateMonster,
     duplicateMonster,
+    setManualCombatValue,
     deleteMonster,
     selectMonster,
     openCreateForm,
