@@ -15,12 +15,13 @@ import type { Monster } from '@/types/monster'
 import type { AbilityEntry, EffectiveStats } from '@/logic/mechanics'
 import { calculateEffectiveStats, xpForLevel, levelLabel } from '@/logic/mechanics'
 import {
+  calculateAbsorption,
   calculateArmorFormula,
   calculateTotalDamage,
-  diceAverage,
   resolveWeaponSides,
 } from '@/logic/damageCalculator'
 import { findArmor, findWeapon } from '@/data/equipment'
+import { resolveCombatValue } from '@/logic/manualCombatValues'
 import { STAT_LABELS_FR } from '@/data/stats'
 import { resistanceStyle } from '@/data/resistance'
 
@@ -415,23 +416,26 @@ function drawCombat(
 
   // Ligne 3 : DÉGÂTS / ABSORPTION
   const y2 = y1 + h1 + gap
-  const catalogArmor = monster.equipment?.armor ? findArmor(monster.equipment.armor.id) : undefined
-  const armorAvg = catalogArmor ? diceAverage(catalogArmor.protection.sides) : 0
-  const skin = effective.skinProtection
-  const naturalArmor = effective.armorBonusFromTraits
-  const absorptionTotal = Math.round((armorAvg + (skin?.average ?? 0) + naturalArmor) * 10) / 10
+  const { armorAverage: armorAvg, skin, naturalArmor, total: absorptionTotal } = calculateAbsorption(monster, effective)
+  const damage = resolveCombatValue(totalDamage.average, monster.manualDamage)
+  const absorption = resolveCombatValue(absorptionTotal, monster.manualAbsorption)
 
   const absSubText = [
+    absorption.isManual ? `Saisie manuelle (calcul ${absorption.computed})` : '',
     `Armure ${armorAvg > 0 ? armorAvg : '—'}`,
     naturalArmor > 0 ? `Naturelle +${naturalArmor}` : '',
     skin ? `Peau ${skin.dice} (${skin.average})` : '',
   ].filter(Boolean).join(' · ')
-  const dmgSub = measureStatSub(doc, totalDamage.formula || '—', w2)
+  const dmgSubText = [
+    damage.isManual ? `Saisie manuelle (calcul ${damage.computed})` : '',
+    totalDamage.formula || '—',
+  ].filter(Boolean).join(' · ')
+  const dmgSub = measureStatSub(doc, dmgSubText, w2)
   const absSub = measureStatSub(doc, absSubText, w2)
   const h2 = Math.max(statBoxHeight(dmgSub.length), statBoxHeight(absSub.length))
 
-  statBox(doc, x, y2, w2, h2, 'Dégâts', String(totalDamage.average), dmgSub, COLORS.amber, COLORS.amberBg, COLORS.amber)
-  statBox(doc, x + w2 + gap, y2, w2, h2, 'Absorption', String(absorptionTotal), absSub, COLORS.blue, COLORS.blueBg, COLORS.blue)
+  statBox(doc, x, y2, w2, h2, 'Dégâts', String(damage.value), dmgSub, COLORS.amber, COLORS.amberBg, COLORS.amber)
+  statBox(doc, x + w2 + gap, y2, w2, h2, 'Absorption', String(absorption.value), absSub, COLORS.blue, COLORS.blueBg, COLORS.blue)
 
   cursor.y = y2 + h2 + 4
   return cursor.y - startY

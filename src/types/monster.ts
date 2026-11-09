@@ -91,6 +91,10 @@ export interface Monster {
   // Équipement
   equipment: MonsterEquipment;
 
+  // Valeurs saisies par le MJ sur la fiche : remplacent le calcul tant qu'elles existent
+  manualDamage?: number;
+  manualAbsorption?: number;
+
   // Roleplay
   tactics?: string;
   notes?: string;
