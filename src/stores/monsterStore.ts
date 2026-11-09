@@ -10,6 +10,7 @@ import {
   updateMonster as dbUpdate,
   deleteMonster as dbDelete,
 } from '@/logic/database'
+import { buildMonsterCopy } from '@/logic/monsterCopy'
 import {
   fetchCustomMonsters,
   upsertMonsterRemote,
@@ -147,6 +148,12 @@ export const useMonsterStore = defineStore('monsters', () => {
     }
   }
 
+  async function duplicateMonster(id: string): Promise<Monster | null> {
+    const original = monsters.value.find((m) => m.id === id)
+    if (!original) return null
+    return addMonster(buildMonsterCopy(original))
+  }
+
   async function deleteMonster(id: string): Promise<void> {
     const monster = monsters.value.find((m) => m.id === id)
     await dbDelete(id)
@@ -211,6 +218,7 @@ export const useMonsterStore = defineStore('monsters', () => {
     seedDemoIfEmpty,
     addMonster,
     updateMonster,
+    duplicateMonster,
     deleteMonster,
     selectMonster,
     openCreateForm,

@@ -108,3 +108,16 @@ public aurait exposé des identifiants modifiables par n'importe qui.
 **Non vérifié** : connexion réelle avec le compte du MJ après ce changement (pas d'identifiants
 dans cet environnement) — à tester une fois avant de merger.
 
+
+### DUPLIQUER UN MONSTRE — ✅ CODE TERMINÉ (9 nov. 2026)
+
+Raison : le MJ veut partir d'une créature existante pour en faire une variante sans retaper toute la fiche.
+
+- [x] `src/logic/monsterCopy.ts` — `buildMonsterCopy()` : copie profonde, nom suffixé « (copie) », `isCustom: true`
+- [x] `monsterStore.duplicateMonster(id)` — crée la copie via `addMonster` (nouvel id, synchro cloud si connecté)
+- [x] `MonsterList` — bouton « Dupliquer » sur chaque carte, ouvre le formulaire d'édition sur la copie
+
+**Vérifié** : `vue-tsc` + build OK ; testé dans Chromium en démo : duplication du Scrofar Corrompu →
+formulaire pré-rempli sur la copie → copie renommée + Endurance 15 → 22 → après rechargement,
+l'original est inchangé (15, id distinct), la copie conserve ses modifications.
+**Non vérifié** : synchro Supabase de la copie avec le compte réel (pas d'identifiants ici).
