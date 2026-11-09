@@ -58,6 +58,11 @@ async function confirmDelete(id: string) {
   confirmingDeleteId.value = null
 }
 
+async function duplicate(id: string) {
+  const copy = await store.duplicateMonster(id)
+  if (copy) store.openEditForm(copy.id)
+}
+
 function enduranceCurrent(m: Monster): number {
   return store.getEnduranceCurrent(m.id)
 }
@@ -327,6 +332,14 @@ async function exportSelectionPdf() {
               @mouseenter="(e) => (e.currentTarget as HTMLElement).style.borderColor='#3d3628'"
               @mouseleave="(e) => (e.currentTarget as HTMLElement).style.borderColor='#332d21'"
             >Éditer</button>
+            <button
+              @click.stop="duplicate(monster.id)"
+              class="text-xs px-2 py-1 rounded border text-sym-text3 hover:text-sym-text2 transition-colors"
+              style="border-color:#332d21; background:transparent;"
+              title="Créer une copie modifiable de ce monstre"
+              @mouseenter="(e) => (e.currentTarget as HTMLElement).style.borderColor='#3d3628'"
+              @mouseleave="(e) => (e.currentTarget as HTMLElement).style.borderColor='#332d21'"
+            >Dupliquer</button>
             <button
               @click.stop="requestDelete($event, monster.id)"
               class="text-xs w-7 h-7 flex items-center justify-center rounded transition-colors"
